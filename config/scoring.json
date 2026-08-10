@@ -1,0 +1,7 @@
+{
+  "early_start": "09:30",
+  "late_start": "15:00",
+  "one_hour_max_teaching_minutes": 60,
+  "overload_teaching_minutes": 360,
+  "overload_event_count": 4
+}
