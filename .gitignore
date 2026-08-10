@@ -2,3 +2,8 @@
 OneDrive_2026-08-10
 OneDrive_2026-08-10.zip
 
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
