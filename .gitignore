@@ -10,3 +10,6 @@ __pycache__/
 # Reproducible Stage 2 outputs
 data/processed/
 
+# Reproducible Stage 8 dashboard exports
+web/public/data/
+
