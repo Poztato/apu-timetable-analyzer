@@ -1,0 +1,15 @@
+{
+  "programme_routes": {
+    "APD": "Dual-degree programme",
+    "APU": "APU programme"
+  },
+  "courses": {
+    "CS": {
+      "name": "Computer Science",
+      "school": null
+    }
+  },
+  "specialisms": {
+    "DA": "Data Analytics"
+  }
+}
