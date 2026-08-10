@@ -7,3 +7,6 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Reproducible Stage 2 outputs
+data/processed/
+
