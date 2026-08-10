@@ -13,3 +13,7 @@ data/processed/
 # Reproducible Stage 8 dashboard exports
 web/public/data/
 
+# Frontend dependencies and build output
+web/node_modules/
+web/dist/
+
