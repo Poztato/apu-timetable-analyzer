@@ -1,0 +1,17 @@
+[
+  {
+    "snapshot_id": "2026-08-10T13-30-57Z_e7eed201aa7e",
+    "collected_at": "2026-08-10T13:30:57Z",
+    "source_url": "https://s3-ap-southeast-1.amazonaws.com/open-ws/weektimetable",
+    "sha256": "e7eed201aa7e41147cd4f3b6486240099af413ca5574e8f10587e27d5e204b01",
+    "path": "data/snapshots/raw/2026-08-10T13-30-57Z_e7eed201aa7e.json.gz",
+    "content_length": 18795915,
+    "row_count": 34657,
+    "distinct_intake_count": 1079,
+    "minimum_event_date": "2026-08-03",
+    "maximum_event_date": "2026-09-06",
+    "etag": "\"e4d11e23a129350243d556da7d226f6e\"",
+    "last_modified": "Fri, 07 Aug 2026 04:46:27 GMT",
+    "s3_version_id": "JaNjbe6736I5YOxofbwhhbxIXxpxrnqQ"
+  }
+]
