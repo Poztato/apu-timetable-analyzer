@@ -1,0 +1,10 @@
+{
+  "default_criterion_order": [
+    "gap_burden",
+    "late_only",
+    "early_only",
+    "one_hour_only",
+    "overloaded"
+  ],
+  "position_weights": [5, 4, 3, 2, 1]
+}
