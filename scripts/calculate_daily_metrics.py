@@ -281,6 +281,17 @@ def _calculate_day(
     last_class_end = merged[-1][1]
     event_count = len(slots)
     delivery_counts = slots["delivery_mode"].value_counts().to_dict()
+    campus_slots = slots.loc[slots["delivery_mode"] == "campus"]
+    campus_intervals = list(zip(campus_slots["start_at"], campus_slots["end_at"]))
+    merged_campus_intervals = _merge_intervals(campus_intervals)
+    campus_teaching_minutes = sum(
+        _whole_minutes(start_at, end_at, "Campus teaching duration")
+        for start_at, end_at in merged_campus_intervals
+    )
+    campus_event_count = len(campus_slots)
+    first_campus_start = (
+        merged_campus_intervals[0][0] if merged_campus_intervals else None
+    )
 
     result = {
         "variant_id": day_events["variant_id"].iloc[0],
@@ -304,7 +315,7 @@ def _calculate_day(
         "longest_gap_minutes": max(gaps, default=0),
         "exact_overlap_pair_count": exact_overlap_pairs,
         "overlap_pair_count": overlap_pairs,
-        "campus_event_count": int(delivery_counts.get("campus", 0)),
+        "campus_event_count": campus_event_count,
         "online_event_count": int(delivery_counts.get("online", 0)),
         "unknown_event_count": int(
             event_count
@@ -312,16 +323,17 @@ def _calculate_day(
             - delivery_counts.get("online", 0)
         ),
         "early_only_flag": (
-            event_count == 1
-            and _local_clock(first_class_start) <= thresholds.early_start
+            campus_event_count == 1
+            and _local_clock(first_campus_start) <= thresholds.early_start
         ),
         "late_only_flag": (
-            event_count == 1
-            and _local_clock(first_class_start) >= thresholds.late_start
+            campus_event_count == 1
+            and _local_clock(first_campus_start) >= thresholds.late_start
         ),
         "one_hour_only_flag": (
-            event_count == 1
-            and teaching_minutes <= thresholds.one_hour_max_teaching_minutes
+            campus_event_count > 0
+            and campus_teaching_minutes
+            <= thresholds.one_hour_max_teaching_minutes
         ),
         "overloaded_flag": (
             teaching_minutes >= thresholds.overload_teaching_minutes

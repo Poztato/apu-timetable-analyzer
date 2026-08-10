@@ -121,8 +121,6 @@ class WeeklyAggregationTests(unittest.TestCase):
                 "15:00",
                 "17:00",
                 teaching_minutes=120,
-                campus_events=0,
-                online_events=1,
                 late_only=True,
             ),
             daily_record(
@@ -132,6 +130,14 @@ class WeeklyAggregationTests(unittest.TestCase):
                 teaching_minutes=60,
                 early_only=True,
                 one_hour_only=True,
+            ),
+            daily_record(
+                date(2026, 8, 5),
+                "12:00",
+                "13:00",
+                teaching_minutes=60,
+                campus_events=0,
+                online_events=1,
             ),
             daily_record(
                 date(2026, 8, 6),
@@ -147,12 +153,12 @@ class WeeklyAggregationTests(unittest.TestCase):
 
         row = calculate_weekly_metrics(daily).iloc[0]
 
-        self.assertEqual(row["active_days"], 4)
-        self.assertEqual(row["campus_days"], 3)
+        self.assertEqual(row["active_days"], 5)
+        self.assertEqual(row["campus_days"], 4)
         self.assertEqual(row["online_only_days"], 1)
         self.assertEqual(row["weekend_days"], 1)
-        self.assertEqual(row["total_events"], 8)
-        self.assertEqual(row["total_teaching_minutes"], 540)
+        self.assertEqual(row["total_events"], 9)
+        self.assertEqual(row["total_teaching_minutes"], 600)
         self.assertEqual(row["total_gap_minutes"], 450)
         self.assertEqual(row["longest_gap_minutes"], 450)
         self.assertEqual(row["days_with_gaps"], 1)

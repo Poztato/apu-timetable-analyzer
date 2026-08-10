@@ -161,7 +161,7 @@ class DailyMeasureTests(unittest.TestCase):
         self.assertEqual(row["teaching_minutes"], 60)
         self.assertEqual(row["exact_overlap_pair_count"], 1)
         self.assertEqual(row["overlap_pair_count"], 1)
-        self.assertFalse(row["one_hour_only_flag"])
+        self.assertTrue(row["one_hour_only_flag"])
 
     def test_co_teaching_record_does_not_inflate_event_count(self) -> None:
         first = source_event(
@@ -288,6 +288,41 @@ class DailyMeasureTests(unittest.TestCase):
         self.assertEqual(row["campus_event_count"], 1)
         self.assertEqual(row["online_event_count"], 1)
         self.assertEqual(row["unknown_event_count"], 0)
+        self.assertTrue(row["one_hour_only_flag"])
+
+    def test_online_only_day_gets_no_commute_flags(self) -> None:
+        row = metric_row(
+            source_event(
+                "ONLINE-ONLY",
+                "2026-08-03T08:30:00+08:00",
+                "2026-08-03T09:30:00+08:00",
+                delivery_mode="online",
+            )
+        )
+
+        self.assertFalse(row["early_only_flag"])
+        self.assertFalse(row["late_only_flag"])
+        self.assertFalse(row["one_hour_only_flag"])
+
+    def test_mixed_day_uses_only_campus_slot_for_commute_flags(self) -> None:
+        row = metric_row(
+            source_event(
+                "ONLINE-EARLY",
+                "2026-08-03T09:00:00+08:00",
+                "2026-08-03T11:00:00+08:00",
+                delivery_mode="online",
+            ),
+            source_event(
+                "CAMPUS-LATE",
+                "2026-08-03T15:00:00+08:00",
+                "2026-08-03T16:00:00+08:00",
+                delivery_mode="campus",
+            ),
+        )
+
+        self.assertFalse(row["early_only_flag"])
+        self.assertTrue(row["late_only_flag"])
+        self.assertTrue(row["one_hour_only_flag"])
 
     def test_retains_nullable_intake_metadata_types(self) -> None:
         metrics = calculate_daily_metrics(
