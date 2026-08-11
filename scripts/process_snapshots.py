@@ -70,6 +70,8 @@ OUTPUT_COLUMNS = [
     "color",
     "programme_route",
     "programme_route_name",
+    "programme_level",
+    "programme_level_name",
     "academic_level",
     "intake_year",
     "intake_month",
@@ -88,9 +90,70 @@ DEGREE_INTAKE_PATTERN = re.compile(
     r"(?P<level>[1-4])F"
     r"(?P<year>\d{2})"
     r"(?P<month>0[1-9]|1[0-2])"
-    r"(?P<course>[A-Z0-9]+)"
-    r"(?:\((?P<specialism>[^()]+)\))?$"
+    r"(?P<course>[A-Z0-9-]+)"
+    r"(?P<qualifiers>(?:\([^()]+\))*)$"
 )
+
+MASTERS_INTAKE_PATTERN = re.compile(
+    r"^(?P<route>APD|APU)MF"
+    r"(?P<year>\d{2})"
+    r"(?P<month>0[1-9]|1[0-2])"
+    r"(?P<course>[A-Z0-9-]+)?"
+    r"(?P<qualifiers>(?:\([^()]+\))*)$"
+)
+
+DOCTORATE_INTAKE_PATTERN = re.compile(
+    r"^(?P<route>APU)PF"
+    r"(?P<year>\d{2})"
+    r"(?P<month>0[1-9]|1[0-2])"
+    r"(?P<course>[A-Z0-9-]+)?"
+    r"(?P<qualifiers>(?:\([^()]+\))*)$"
+)
+
+FOUNDATION_INTAKE_PATTERN = re.compile(
+    r"^UCFF"
+    r"(?P<year>\d{2})"
+    r"(?P<month>0[1-9]|1[0-2])"
+    r"(?P<course>[A-Z0-9-]+)"
+    r"(?P<qualifiers>(?:\([^()]+\))*)$"
+)
+
+DIPLOMA_INTAKE_PATTERN = re.compile(
+    r"^UCD(?:[12])?F"
+    r"(?P<year>\d{2})"
+    r"(?P<month>0[1-9]|1[0-2])"
+    r"(?P<course>[A-Z0-9-]+)"
+    r"(?P<qualifiers>(?:\([^()]+\))*)$"
+)
+
+CERTIFICATE_INTAKE_PATTERN = re.compile(
+    r"^AFCF"
+    r"(?P<year>\d{2})"
+    r"(?P<month>0[1-9]|1[0-2])"
+    r"(?P<course>[A-Z0-9-]+)"
+    r"(?P<qualifiers>(?:\([^()]+\))*)$"
+)
+
+INTAKE_PATTERNS = (
+    ("apu_degree", "degree", DEGREE_INTAKE_PATTERN),
+    ("apu_masters", "masters", MASTERS_INTAKE_PATTERN),
+    ("apu_doctorate", "doctorate", DOCTORATE_INTAKE_PATTERN),
+    ("ucf_foundation", "foundation", FOUNDATION_INTAKE_PATTERN),
+    ("ucd_diploma", "diploma", DIPLOMA_INTAKE_PATTERN),
+    ("afc_certificate", "certificate", CERTIFICATE_INTAKE_PATTERN),
+)
+
+DEFAULT_PROGRAMME_LEVEL_NAMES = {
+    "certificate": "Certificate",
+    "diploma": "Diploma",
+    "foundation": "Foundation",
+    "degree": "Degree",
+    "masters": "Master's",
+    "doctorate": "Doctorate",
+    "other": "Other or unclassified",
+}
+
+QUALIFIER_PATTERN = re.compile(r"\(([^()]+)\)")
 
 
 class ProcessingError(RuntimeError):
@@ -139,11 +202,23 @@ def load_snapshot_index(index_path: Path) -> list[dict[str, Any]]:
 def parse_intake_code(
     intake_code: str, intake_config: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Parse a known degree intake format without guessing unknown formats."""
+    """Parse supported APU programme families without guessing unknown formats."""
+
+    configured_level_names = intake_config.get("programme_levels", {})
+    if not isinstance(configured_level_names, Mapping):
+        configured_level_names = {}
+
+    def level_name(level: str) -> str:
+        value = configured_level_names.get(level)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        return DEFAULT_PROGRAMME_LEVEL_NAMES[level]
 
     empty_result = {
         "programme_route": None,
         "programme_route_name": None,
+        "programme_level": "other",
+        "programme_level_name": level_name("other"),
         "academic_level": None,
         "intake_year": None,
         "intake_month": None,
@@ -157,18 +232,37 @@ def parse_intake_code(
         "parser_family": None,
     }
 
-    match = DEGREE_INTAKE_PATTERN.fullmatch(intake_code.strip().upper())
-    if match is None:
+    normalized_code = intake_code.strip().upper()
+    matched_pattern = next(
+        (
+            (parser_family, programme_level, match)
+            for parser_family, programme_level, pattern in INTAKE_PATTERNS
+            if (match := pattern.fullmatch(normalized_code)) is not None
+        ),
+        None,
+    )
+    if matched_pattern is None:
         return empty_result
 
-    route = match.group("route")
-    course_code = match.group("course")
-    specialism_code = match.group("specialism")
+    parser_family, programme_level, match = matched_pattern
+    groups = match.groupdict()
+
+    route = groups.get("route")
+    course_code = groups.get("course")
+    qualifiers = QUALIFIER_PATTERN.findall(groups.get("qualifiers") or "")
+    specialism_qualifiers = [
+        qualifier for qualifier in qualifiers if qualifier != "PR"
+    ]
+    if len(specialism_qualifiers) > 1:
+        return empty_result
+    specialism_code = (
+        specialism_qualifiers[0] if specialism_qualifiers else None
+    )
 
     routes = intake_config.get("programme_routes", {})
     courses = intake_config.get("courses", {})
     specialisms = intake_config.get("specialisms", {})
-    course_details = courses.get(course_code, {})
+    course_details = courses.get(course_code, {}) if course_code else {}
     if not isinstance(course_details, Mapping):
         course_details = {}
 
@@ -192,10 +286,14 @@ def parse_intake_code(
 
     return {
         "programme_route": route,
-        "programme_route_name": routes.get(route),
-        "academic_level": int(match.group("level")),
-        "intake_year": 2000 + int(match.group("year")),
-        "intake_month": int(match.group("month")),
+        "programme_route_name": routes.get(route) if route else None,
+        "programme_level": programme_level,
+        "programme_level_name": level_name(programme_level),
+        "academic_level": (
+            int(groups["level"]) if groups.get("level") else None
+        ),
+        "intake_year": 2000 + int(groups["year"]),
+        "intake_month": int(groups["month"]),
         "course_code": course_code,
         "course_name": course_details.get("name"),
         "specialism_code": specialism_code,
@@ -203,7 +301,7 @@ def parse_intake_code(
         "school": school,
         "study_mode": None,
         "parse_status": "parsed",
-        "parser_family": "apu_degree",
+        "parser_family": parser_family,
     }
 
 
@@ -414,6 +512,8 @@ def normalize_events(
     metadata_text_columns = [
         "programme_route",
         "programme_route_name",
+        "programme_level",
+        "programme_level_name",
         "course_code",
         "course_name",
         "specialism_code",
@@ -440,6 +540,12 @@ def normalize_events(
         "distinct_intake_count": len(metadata),
         "parsed_intake_count": int(parse_counts.get("parsed", 0)),
         "unparsed_intake_count": int(parse_counts.get("unparsed", 0)),
+        "programme_level_counts": {
+            str(level): int(count)
+            for level, count in sorted(
+                metadata["programme_level_name"].value_counts().items()
+            )
+        },
     }
     return frame, statistics
 

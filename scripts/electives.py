@@ -27,6 +27,7 @@ PROFILE_COLUMNS = [
 REQUIRED_EVENT_COLUMNS = {
     "snapshot_id",
     "intake_code",
+    "programme_level",
     "course_code",
     "specialism_code",
     "academic_level",
@@ -100,6 +101,7 @@ def validate_elective_config(config: Mapping[str, Any]) -> None:
         raise ElectiveRuleError("Elective config source must be an object.")
     _required_string(source.get("edition"), "source.edition")
     _required_string(source.get("sha256"), "source.sha256")
+    _required_string(config.get("programme_level"), "programme_level")
 
     applicability = config.get("applicability")
     if not isinstance(applicability, Mapping):
@@ -502,6 +504,7 @@ def resolve_elective_profiles(
     validate_elective_config(config)
     rules = _rule_index(config)
     covered = {str(value) for value in config["covered_programmes"]}
+    covered_programme_level = str(config["programme_level"])
     applicability = config["applicability"]
     minimum_year_month = int(applicability["minimum_intake_year_month"])
     verified_legacy = {
@@ -520,6 +523,9 @@ def resolve_elective_profiles(
         ["snapshot_id", "intake_code"], sort=False, dropna=False
     ):
         intake_text = str(intake_code).strip().upper()
+        intake_programme_level = _single_metadata_value(
+            intake_events, "programme_level"
+        )
         course_code = _single_metadata_value(intake_events, "course_code")
         specialism_code = _single_metadata_value(intake_events, "specialism_code")
         level_value = _single_metadata_value(intake_events, "academic_level")
@@ -533,7 +539,11 @@ def resolve_elective_profiles(
             else int(intake_year) * 100 + int(intake_month)
         )
 
-        if key not in covered:
+        if (
+            pd.isna(intake_programme_level)
+            or str(intake_programme_level) != covered_programme_level
+            or key not in covered
+        ):
             uncovered_intake_count += 1
             uncovered_programme_counts[key or "UNPARSED"] += 1
             status = "programme_uncovered"

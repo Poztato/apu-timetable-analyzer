@@ -30,6 +30,8 @@ DAILY_KEY = [*WEEKLY_KEY, "event_date"]
 METADATA_COLUMNS = [
     "programme_route",
     "programme_route_name",
+    "programme_level",
+    "programme_level_name",
     "academic_level",
     "intake_year",
     "intake_month",

@@ -29,7 +29,7 @@ from scripts.rank_timetables import (
 )
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 CALENDAR_TIMEZONE = "Asia/Kuala_Lumpur"
 
 INDEX_RELATIVE_PATH = Path("data/snapshots/index.json")
@@ -48,6 +48,8 @@ SNAPSHOT_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 INTAKE_METADATA_COLUMNS = [
     "programme_route",
     "programme_route_name",
+    "programme_level",
+    "programme_level_name",
     "academic_level",
     "intake_year",
     "intake_month",
@@ -547,6 +549,9 @@ def _build_filter_options(
         delivery_modes.append("unknown")
 
     return {
+        "programme_levels": _paired_filter_options(
+            intakes, "programme_level", "programme_level_name"
+        ),
         "programme_routes": _paired_filter_options(
             intakes, "programme_route", "programme_route_name"
         ),
