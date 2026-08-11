@@ -7,6 +7,7 @@
     "sha256": "9687dcdfa70ce69d6a6e4fc8e36c79df1b60e3c4d23a323f265cc2713b7f649e",
     "extraction_method": "Embedded PDF text, no OCR"
   },
+  "programme_level": "degree",
   "applicability": {
     "minimum_intake_year_month": 202607,
     "verified_legacy_intakes": [

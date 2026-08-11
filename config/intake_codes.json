@@ -11,6 +11,15 @@
     "APD": "Dual-degree programme",
     "APU": "APU programme"
   },
+  "programme_levels": {
+    "certificate": "Certificate",
+    "diploma": "Diploma",
+    "foundation": "Foundation",
+    "degree": "Degree",
+    "masters": "Master's",
+    "doctorate": "Doctorate",
+    "other": "Other or unclassified"
+  },
   "courses": {
     "CGD": {
       "name": "Game Development",
