@@ -15,18 +15,36 @@ from scripts.electives import (
 
 def rule_config(*, minimum_year_month: int = 202607) -> dict[str, object]:
     return {
-        "schema_version": 1,
-        "source": {"edition": "Test", "sha256": "abc"},
-        "programme_level": "degree",
-        "applicability": {
-            "minimum_intake_year_month": minimum_year_month,
-            "verified_legacy_intakes": [],
-        },
-        "covered_programmes": ["SE"],
+        "schema_version": 2,
+        "sources": [
+            {
+                "id": "test-source",
+                "title": "Test brochure",
+                "edition": "Test",
+                "local_path": "test.pdf",
+                "url": "https://example.test/test.pdf",
+                "sha256": "abc",
+                "extraction_method": "Embedded text",
+                "applicability": {
+                    "minimum_intake_year_month": minimum_year_month,
+                    "verified_legacy_intakes": [],
+                },
+            }
+        ],
+        "covered_programmes": [
+            {
+                "programme_level": "degree",
+                "programme_keys": ["SE"],
+                "source_id": "test-source",
+                "status": "complete",
+            }
+        ],
         "known_issues": [],
         "rules": [
             {
                 "id": "se-level-3-test",
+                "source_id": "test-source",
+                "programme_level": "degree",
                 "programme_keys": ["SE"],
                 "academic_level": 3,
                 "brochure_page": 25,
@@ -83,8 +101,9 @@ class ElectiveConfigTests(unittest.TestCase):
             repository_root / "config" / "elective_rules.json"
         )
 
-        self.assertEqual(config["schema_version"], 1)
-        self.assertEqual(len(config["rules"]), 15)
+        self.assertEqual(config["schema_version"], 2)
+        self.assertEqual(len(config["sources"]), 12)
+        self.assertEqual(len(config["rules"]), 46)
 
     def test_normalizes_ampersands_case_and_hyphens(self) -> None:
         self.assertEqual(
@@ -136,7 +155,9 @@ class ElectiveResolutionTests(unittest.TestCase):
 
     def test_verified_legacy_intake_can_use_rule(self) -> None:
         config = rule_config()
-        config["applicability"]["verified_legacy_intakes"] = ["APD3F2605SE"]
+        config["sources"][0]["applicability"]["verified_legacy_intakes"] = [
+            "APD3F2605SE"
+        ]
         events = events_for(
             "Distributed Computer Systems",
             "Enterprise Programming for Distributed Application",
@@ -184,4 +205,94 @@ class ElectiveResolutionTests(unittest.TestCase):
         variants, report = resolve_elective_profiles(events, rule_config())
 
         self.assertEqual(set(variants["elective_status"]), {"programme_uncovered"})
-        self.assertEqual(report["uncovered_programme_counts"], {"IT(DT)": 1})
+        self.assertEqual(
+            report["uncovered_programme_counts"], {"degree/IT(DT)": 1}
+        )
+
+    def test_keeps_every_module_in_a_selected_pathway_package(self) -> None:
+        config = rule_config(minimum_year_month=202601)
+        rule = config["rules"][0]
+        rule["heading_choose"] = 1
+        rule["groups"] = [
+            {
+                "id": "pathway-group",
+                "choose": 1,
+                "options": [
+                    {
+                        "id": "analytics",
+                        "name": "Analytics pathway",
+                        "modules": [
+                            {"name": "Shared Analytics"},
+                            {"name": "Forecasting"},
+                        ],
+                    },
+                    {
+                        "id": "cloud",
+                        "name": "Cloud pathway",
+                        "modules": [
+                            {"name": "Shared Analytics"},
+                            {"name": "Cloud Platforms"},
+                        ],
+                    },
+                ],
+            }
+        ]
+        events = events_for(
+            "Project Management",
+            "Shared Analytics",
+            "Forecasting",
+            "Cloud Platforms",
+        )
+
+        variants, report = resolve_elective_profiles(events, config)
+
+        self.assertEqual(variants["elective_profile"].nunique(), 2)
+        self.assertEqual(report["status_counts"], {"resolved": 1})
+        module_sets = {
+            frozenset(profile["module_name"])
+            for _, profile in variants.groupby("elective_profile")
+        }
+        self.assertEqual(
+            module_sets,
+            {
+                frozenset(
+                    ["Project Management", "Shared Analytics", "Forecasting"]
+                ),
+                frozenset(
+                    ["Project Management", "Shared Analytics", "Cloud Platforms"]
+                ),
+            },
+        )
+
+    def test_collapses_pathways_with_identical_active_timetables(self) -> None:
+        config = rule_config(minimum_year_month=202601)
+        rule = config["rules"][0]
+        rule["groups"] = [
+            {
+                "id": "shared-pathway-group",
+                "choose": 1,
+                "options": [
+                    {
+                        "id": "analytics",
+                        "name": "Analytics pathway",
+                        "modules": [{"name": "Shared Module"}],
+                    },
+                    {
+                        "id": "cloud",
+                        "name": "Cloud pathway",
+                        "modules": [{"name": "Shared Module"}],
+                    },
+                ],
+            }
+        ]
+        events = events_for("Project Management", "Shared Module")
+
+        variants, report = resolve_elective_profiles(events, config)
+
+        self.assertEqual(variants["elective_profile"].nunique(), 1)
+        self.assertEqual(report["status_counts"], {"fixed": 1})
+        self.assertEqual(report["intakes"][0]["candidate_profile_count"], 2)
+        self.assertIn(
+            "Analytics pathway or Cloud pathway",
+            set(variants["elective_profile_name"]),
+        )
