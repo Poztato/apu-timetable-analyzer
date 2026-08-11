@@ -321,9 +321,20 @@ def _construct_timetable_variants(
             elective_report["status_counts"].get(
                 "source_version_unverified", 0
             )
+            + elective_report["status_counts"].get(
+                "known_issue_unresolved", 0
+            )
         ),
         "uncovered_elective_intake_count": int(
             elective_report["status_counts"].get("programme_uncovered", 0)
+            + elective_report["status_counts"].get("source_ambiguous", 0)
+            + elective_report["status_counts"].get("source_not_found", 0)
+        ),
+        "ambiguous_elective_intake_count": int(
+            elective_report["status_counts"].get("source_ambiguous", 0)
+        ),
+        "missing_source_elective_intake_count": int(
+            elective_report["status_counts"].get("source_not_found", 0)
         ),
     }
     return variants, statistics, elective_report
