@@ -108,6 +108,14 @@ function optionLabel(option: CodeNameOption): string {
   return option.name ? `${option.code}: ${option.name}` : option.code;
 }
 
+function courseOptionLabel(option: CodeNameOption): string {
+  return option.name ? `${option.name} (${option.code})` : option.code;
+}
+
+function nameOnlyOptionLabel(option: CodeNameOption): string {
+  return option.name ?? option.code;
+}
+
 function variantLabel(row: RankedVariant): string {
   const base = `${row.intake_code} (${row.grouping})`;
   if (row.elective_status === "resolved" || row.elective_status === "fixed") {
@@ -721,7 +729,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
               value={filters.programmeLevel}
               options={data.filters.programme_levels.map((option) => ({
                 value: option.code,
-                label: optionLabel(option),
+                label: nameOnlyOptionLabel(option),
               }))}
               allLabel="All programme levels"
               onChange={(value) => updateFilter("programmeLevel", value)}
@@ -751,7 +759,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
               value={filters.courseCode}
               options={data.filters.courses.map((option) => ({
                 value: option.code,
-                label: optionLabel(option),
+                label: courseOptionLabel(option),
               }))}
               allLabel="All courses"
               onChange={(value) => updateFilter("courseCode", value)}
@@ -761,7 +769,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
               value={filters.specialismCode}
               options={data.filters.specialisms.map((option) => ({
                 value: option.code,
-                label: optionLabel(option),
+                label: nameOnlyOptionLabel(option),
               }))}
               allLabel="All specialisms"
               onChange={(value) => updateFilter("specialismCode", value)}

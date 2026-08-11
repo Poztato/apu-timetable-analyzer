@@ -52,6 +52,8 @@ describe("Dashboard MVP", () => {
 
   it("loads the real export and supports search, filters, and priority changes", async () => {
     const data = loadRealDashboardData();
+    expect(data.filters.courses.every((option) => option.name)).toBe(true);
+    expect(data.filters.specialisms.every((option) => option.name)).toBe(true);
     const defaultPeerCount = data.weeklyMetrics.filter(
       (row) => row.week_start === "2026-08-10",
     ).length;
@@ -69,6 +71,40 @@ describe("Dashboard MVP", () => {
       ),
     ).toBeTruthy();
     expect(screen.getAllByText("AFCF2507ICT (G1)").length).toBeGreaterThan(0);
+
+    const programmeLevelSelect = screen.getByLabelText("Programme level");
+    expect(
+      within(programmeLevelSelect).getByRole("option", { name: "Degree" }),
+    ).toHaveProperty("value", "degree");
+    expect(
+      within(programmeLevelSelect).queryByRole("option", {
+        name: "degree: Degree",
+      }),
+    ).toBeNull();
+
+    const courseSelect = screen.getByLabelText("Course");
+    expect(
+      within(courseSelect).getByRole("option", {
+        name: "Computer Science (CS)",
+      }),
+    ).toHaveProperty("value", "CS");
+    expect(
+      within(courseSelect).getByRole("option", {
+        name: "Accounting (ACC)",
+      }),
+    ).toHaveProperty("value", "ACC");
+
+    const specialismSelect = screen.getByLabelText("Specialism");
+    expect(
+      within(specialismSelect).getByRole("option", {
+        name: "Data Analytics",
+      }),
+    ).toHaveProperty("value", "DA");
+    expect(
+      within(specialismSelect).queryByRole("option", {
+        name: "DA: Data Analytics",
+      }),
+    ).toBeNull();
 
     const search = screen.getByLabelText("Search intake code");
     await user.type(search, "APD3F2605CS(DA)");
