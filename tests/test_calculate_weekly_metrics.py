@@ -20,6 +20,7 @@ def daily_record(
     last_time: str,
     *,
     grouping: str = "G1",
+    elective_profile: str = "ep-none",
     event_count: int = 1,
     merged_block_count: int = 1,
     teaching_minutes: int,
@@ -47,11 +48,15 @@ def daily_record(
     if span_minutes != teaching_minutes + gap_minutes:
         raise AssertionError("Fixture span must equal teaching time plus gaps.")
     return {
-        "variant_id": f"variant-{grouping}",
+        "variant_id": f"variant-{grouping}-{elective_profile}",
         "snapshot_id": "snapshot-one",
         "week_start": date(2026, 8, 3),
         "intake_code": "APD3F2605CS(DA)",
         "grouping": grouping,
+        "elective_profile": elective_profile,
+        "elective_profile_name": "No active brochure elective",
+        "elective_status": "not_active",
+        "elective_rule_id": "test-rule",
         "event_date": event_date,
         "day_of_week": event_date.strftime("%a").upper(),
         "is_weekend": event_date.weekday() >= 5,
@@ -103,6 +108,27 @@ def daily_frame(*records: dict[str, object]) -> pd.DataFrame:
 
 
 class WeeklyAggregationTests(unittest.TestCase):
+    def test_keeps_elective_profiles_separate_within_one_group(self) -> None:
+        first = daily_record(
+            date(2026, 8, 3),
+            "10:00",
+            "11:00",
+            elective_profile="ep-cloud",
+            teaching_minutes=60,
+        )
+        second = daily_record(
+            date(2026, 8, 3),
+            "12:00",
+            "13:00",
+            elective_profile="ep-iot",
+            teaching_minutes=60,
+        )
+
+        weekly = calculate_weekly_metrics(daily_frame(first, second))
+
+        self.assertEqual(len(weekly), 2)
+        self.assertEqual(set(weekly["elective_profile"]), {"ep-cloud", "ep-iot"})
+
     def test_aggregates_planned_weekly_measures(self) -> None:
         daily = daily_frame(
             daily_record(

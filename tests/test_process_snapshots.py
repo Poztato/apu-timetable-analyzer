@@ -58,6 +58,26 @@ class IntakeParsingTests(unittest.TestCase):
         self.assertEqual(parsed["course_code"], "BM")
         self.assertEqual(parsed["specialism_code"], "E-BUS")
 
+    def test_uses_course_specific_specialism_metadata(self) -> None:
+        config = deepcopy(INTAKE_CONFIG)
+        config["courses"]["CS"] = {
+            "name": "Computer Science",
+            "school": "School of Computer Science and Quantum Computing",
+            "specialisms": {
+                "DA": {
+                    "name": "Data Analytics",
+                    "school": "School of Artificial Intelligence and Data Science",
+                }
+            },
+        }
+
+        parsed = parse_intake_code("APD3F2605CS(DA)", config)
+
+        self.assertEqual(parsed["specialism_name"], "Data Analytics")
+        self.assertEqual(
+            parsed["school"], "School of Artificial Intelligence and Data Science"
+        )
+
 
 class NormalizeEventsTests(unittest.TestCase):
     def test_normalizes_event_and_removes_exact_duplicate(self) -> None:

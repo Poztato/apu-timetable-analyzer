@@ -35,6 +35,7 @@ def weekly_record(
     *,
     week_start: date = date(2026, 8, 3),
     grouping: str = "G1",
+    elective_profile: str = "ep-none",
     gap: int = 0,
     late: int = 0,
     early: int = 0,
@@ -42,11 +43,17 @@ def weekly_record(
     overloaded: int = 0,
 ) -> dict[str, object]:
     return {
-        "variant_id": f"{week_start.isoformat()}-{intake_code}-{grouping}",
+        "variant_id": (
+            f"{week_start.isoformat()}-{intake_code}-{grouping}-{elective_profile}"
+        ),
         "snapshot_id": "snapshot-one",
         "week_start": week_start,
         "intake_code": intake_code,
         "grouping": grouping,
+        "elective_profile": elective_profile,
+        "elective_profile_name": "No active brochure elective",
+        "elective_status": "not_active",
+        "elective_rule_id": "test-rule",
         "total_gap_minutes": gap,
         "late_only_days": late,
         "early_only_days": early,
@@ -75,6 +82,18 @@ class RankingProfileTests(unittest.TestCase):
 
 
 class RankWeeklyMetricsTests(unittest.TestCase):
+    def test_keeps_elective_profiles_as_separate_ranked_rows(self) -> None:
+        ranked = rank_weekly_metrics(
+            weekly_frame(
+                weekly_record("INTAKE", elective_profile="ep-cloud", gap=0),
+                weekly_record("INTAKE", elective_profile="ep-iot", gap=100),
+            ),
+            DEFAULT_PROFILE,
+        )
+
+        self.assertEqual(len(ranked), 2)
+        self.assertEqual(set(ranked["elective_profile"]), {"ep-cloud", "ep-iot"})
+
     def test_calculates_endpoint_scaled_percentiles_and_extremes(self) -> None:
         ranked = rank_weekly_metrics(
             weekly_frame(
