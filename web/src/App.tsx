@@ -109,7 +109,11 @@ function optionLabel(option: CodeNameOption): string {
 }
 
 function variantLabel(row: RankedVariant): string {
-  return `${row.intake_code} (${row.grouping})`;
+  const base = `${row.intake_code} (${row.grouping})`;
+  if (row.elective_status === "resolved" || row.elective_status === "fixed") {
+    return `${base}, ${row.elective_profile_name}`;
+  }
+  return base;
 }
 
 function groupByVariant<T extends { variant_index: number }>(
@@ -873,6 +877,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
                       <SortableHeader label="Rank" sortKey="rank" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                       <SortableHeader label="Intake" sortKey="intake" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                       <SortableHeader label="Group" sortKey="grouping" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
+                      <th>Electives</th>
                       <SortableHeader label="Score" sortKey="score" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                       <SortableHeader label="Gaps" sortKey="gap" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                       <SortableHeader label="Late" sortKey="late" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
@@ -895,6 +900,11 @@ export function Dashboard({ data }: { data: DashboardData }) {
                         <td>{row.recalculatedBestRank}</td>
                         <th>{row.intake_code}</th>
                         <td>{row.grouping}</td>
+                        <td>{
+                          row.elective_status === "resolved" || row.elective_status === "fixed"
+                            ? row.elective_profile_name
+                            : row.elective_status.replaceAll("_", " ")
+                        }</td>
                         <td>{formatScore(row.recalculatedScore)}</td>
                         <td>{formatMinutes(row.total_gap_minutes)}</td>
                         <td>{row.late_only_days}</td>
@@ -955,6 +965,8 @@ export function Dashboard({ data }: { data: DashboardData }) {
               <div><dt>Specialism</dt><dd>{selectedIntake?.specialism_name ?? selectedIntake?.specialism_code ?? "None identified"}</dd></div>
               <div><dt>Level</dt><dd>{selectedIntake?.academic_level ?? "Unknown"}</dd></div>
               <div><dt>Route</dt><dd>{selectedIntake?.programme_route_name ?? selectedIntake?.programme_route ?? "Unknown"}</dd></div>
+              <div><dt>Electives</dt><dd>{selected.elective_profile_name}</dd></div>
+              <div><dt>Elective status</dt><dd>{selected.elective_status.replaceAll("_", " ")}</dd></div>
               <div><dt>Active days</dt><dd>{selected.active_days}</dd></div>
               <div><dt>Teaching</dt><dd>{formatMinutes(selected.total_teaching_minutes)}</dd></div>
             </dl>
@@ -1013,7 +1025,8 @@ export function Dashboard({ data }: { data: DashboardData }) {
             <li>Rankings are recalculated in this browser after structured filters and priority changes.</li>
             <li>Online-only days do not receive commute-related early, late, or one-hour flags.</li>
             <li>Historical comparisons are not shown because Stage 7 is postponed and only one retained snapshot is available.</li>
-            <li>School and study-mode filters remain unavailable until those intake mappings are populated.</li>
+            <li>School mappings currently cover the programmes listed in the July 2026 computing brochure.</li>
+            <li>Older curriculum versions remain marked as unresolved until a matching official source is added.</li>
           </ul>
         </section>
       </main>

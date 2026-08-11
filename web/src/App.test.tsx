@@ -48,13 +48,20 @@ describe("Dashboard MVP", () => {
 
   it("loads the real export and supports search, filters, and priority changes", async () => {
     const data = loadRealDashboardData();
+    const defaultPeerCount = data.weeklyMetrics.filter(
+      (row) => row.week_start === "2026-08-10",
+    ).length;
     const user = userEvent.setup();
     render(<Dashboard data={data} />);
 
     expect(
       screen.getByRole("heading", { name: "APU Timetable Analyzer" }),
     ).toBeTruthy();
-    expect(screen.getByText(/958 variants in the current comparison set/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        new RegExp(`${defaultPeerCount} variants in the current comparison set`),
+      ),
+    ).toBeTruthy();
     expect(screen.getAllByText("AFCF2507ICT (G1)").length).toBeGreaterThan(0);
 
     const search = screen.getByLabelText("Search intake code");
@@ -63,7 +70,9 @@ describe("Dashboard MVP", () => {
       name: /APD3F2605CS\(DA\).*G1/i,
     });
     expect(matchingRow.textContent).toContain("APD3F2605CS(DA)");
-    expect(screen.getByText(/Scores use 958 peers/)).toBeTruthy();
+    expect(
+      screen.getByText(new RegExp(`Scores use ${defaultPeerCount} peers`)),
+    ).toBeTruthy();
 
     await user.click(screen.getByLabelText("Move Gap burden down"));
     const priorities = screen.getByRole("list", {

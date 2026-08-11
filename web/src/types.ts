@@ -100,6 +100,10 @@ export interface WeeklyMetric {
   week_start: string;
   intake_code: string;
   grouping: string;
+  elective_profile: string;
+  elective_profile_name: string;
+  elective_status: string;
+  elective_rule_id: string;
   active_days: number;
   campus_days: number;
   online_only_days: number;
@@ -176,6 +180,9 @@ export interface TimetableBlock {
   delivery_mode: "campus" | "online" | "unknown";
   source_grouping: string;
   is_common_event: boolean;
+  is_elective: boolean;
+  elective_group_id: string | null;
+  elective_option_id: string | null;
   is_shared_slot: boolean;
   shared_group_count: number;
   color: string | null;
