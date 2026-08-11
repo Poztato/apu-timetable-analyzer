@@ -1,58 +1,163 @@
 {
-  "schema_version": 1,
-  "source": {
-    "title": "APU Computing, Technology, Software Engineering, Data Science, AI, Cyber Security, Game Development and VR/AR brochure",
-    "edition": "July 2026",
-    "local_path": "OneDrive_2026-08-10/e2026July_Computing.pdf",
-    "sha256": "9687dcdfa70ce69d6a6e4fc8e36c79df1b60e3c4d23a323f265cc2713b7f649e",
-    "extraction_method": "Embedded PDF text, no OCR"
-  },
-  "programme_level": "degree",
-  "applicability": {
-    "minimum_intake_year_month": 202607,
-    "verified_legacy_intakes": [
-      "APD3F2605CS(CYB)",
-      "APD3F2605IMIT",
-      "APD3F2605IMIT(VRAR)",
-      "APD3F2605SE",
-      "APU3F2605CS(CYB)",
-      "APU3F2605IMIT",
-      "APU3F2605IMIT(VRAR)",
-      "APU3F2605SE"
-    ]
-  },
+  "schema_version": 2,
+  "sources": [
+    {
+      "id": "computing-2025-01",
+      "title": "APU Computing, Technology, Multimedia and Game Development brochure",
+      "edition": "January 2025",
+      "local_path": "OneDrive_2026-08-10/Brochures/2025-01_Computing.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2025-02/2025Jan_Computing-min.pdf?VersionId=ETvrGvJxZU_QDjjaFS1Ppmla2dC_OEhi",
+      "sha256": "8b4af1814511ddea89b7d8f5632a9a72fff5ae2ef3186129bb520e75b46cdb1d",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202501, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "preuniversity-2025-04",
+      "title": "APU Foundation, Diploma and Certificate brochure",
+      "edition": "April 2025",
+      "local_path": "OneDrive_2026-08-10/Brochures/2025-04_Pre-University.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2025-04/e2025apr_pre-u_brochure-min.pdf?VersionId=7JvKzO5ap77lIZW7J9xpP5Y5P.sOE_LF",
+      "sha256": "8e48b7c2a9ddebdc8e7b984082ac803bb53fd5a6d38c38b6d5e51a8541144b55",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {
+        "minimum_intake_year_month": 202504,
+        "verified_legacy_intakes": ["UCDF2409ICT(ITR)", "UCDF2411ICT(ITR)", "UCDF2503ICT(ITR)"]
+      }
+    },
+    {
+      "id": "accounting-2025-08",
+      "title": "APU Accounting, Banking, Finance and Actuarial brochure",
+      "edition": "August 2025",
+      "local_path": "OneDrive_2026-08-10/Brochures/2025-08_Accounting_Finance_Actuarial.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2025-08/e2025Aug_Accounting-min.pdf?VersionId=HME3uR1BgJH9AfwIlnwxxzXGlYM.TH.j",
+      "sha256": "a230ff9ddef0610bf301c65bf522e7d191804d95e2b7398ae5082fff53b6a783",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202508, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "computing-2026-07",
+      "title": "APU Computing, Technology, Software Engineering, Data Science, AI, Cyber Security, Game Development and VR/AR brochure",
+      "edition": "July 2026",
+      "local_path": "OneDrive_2026-08-10/e2026July_Computing.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-08/e2026July_Computing.pdf?VersionId=AiRBq98pC0AKJcyLn4uu1dy1CgeuHAEe",
+      "sha256": "9687dcdfa70ce69d6a6e4fc8e36c79df1b60e3c4d23a323f265cc2713b7f649e",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "engineering-2026",
+      "title": "APU Engineering brochure",
+      "edition": "2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2025-08_Engineering_2026.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2025-08/2025Aug_Engineering-min.pdf?VersionId=TEMsL_KDNsIU7Wv_TxsKhREFY6mKXf8p",
+      "sha256": "3f424024447d249e4dbd0047e5c3b27371082167d9d0a7311b7d2d70c4f4efef",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "architecture-2026-01",
+      "title": "APU Architecture brochure",
+      "edition": "January 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-01_Architecture.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-01/2026_Architecture-min.pdf?VersionId=3di_npyJlLjtaiLur4bAFDR1D3uJiJEJ",
+      "sha256": "739a066119cc92128fb05dcc7e96577be0500b0b96dd30d8e6100a59312bbc46",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "design-2026-01",
+      "title": "APU Design and Creative Media brochure",
+      "edition": "January 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-01_Design_Creative_Media.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-01/2026_DesignMedia-min.pdf?VersionId=0HiqZeuekRj6ractGr.uBOgGIukQaDlC",
+      "sha256": "02ee3f141626060a947dca0aa9b703883f1d9eaf17a4841b9a745601b5bb8e6b",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "accounting-2026-02",
+      "title": "APU Accounting, Banking, Finance and Actuarial brochure",
+      "edition": "February 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-02_Accounting_Finance_Actuarial.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-02/2026%20Accounting.pdf?VersionId=N4PXmXu64Y5KyxOv_Vy9n4XiqAKgvyoB",
+      "sha256": "cd281bbfd42807b18eb6d3eb5c847786bae76071c7534d0a63e2a400a0f219c1",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "business-2026-03",
+      "title": "APU Business, Management, Marketing, HRM, Digital Marketing, Hospitality and Tourism brochure",
+      "edition": "March 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-03_Business.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-03/e2026_Business-v2.pdf?VersionId=hJzxc5t7SVHxq7YXMm7o1r1W6UoNTzKR",
+      "sha256": "eaf9578d1e9410c28a623aa95e8c1c701fa80d1ed7972baf932bde5ad45b6347",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "mip-2026-03",
+      "title": "APU Media, International Relations and Psychology brochure",
+      "edition": "March 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-03_Media_International_Relations_Psychology.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-03/2026_MI%26P-v2.pdf?VersionId=4RNqC_DnwZDX.FLeMFPEUbDqV9PS2XT8",
+      "sha256": "bc9d5bf90bcefc15ab3b90258154fc0eccaf0520ac7d098e267c65c535fbda9d",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "preuniversity-2026-03",
+      "title": "APU Foundation, Diploma and Certificate brochure",
+      "edition": "March 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-03_Pre-University.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-03/e2026Feb_Pre-U%20Brochure.pdf?VersionId=jfcPGL0uchNq4fCrwmOnVY2FAV62c4eT",
+      "sha256": "731391d996ebe6e8348ee24f776a1a930e5d639c1f1006230041c470343f634f",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    },
+    {
+      "id": "postgraduate-2026-04",
+      "title": "APU Postgraduate Studies brochure",
+      "edition": "April 2026",
+      "local_path": "OneDrive_2026-08-10/Brochures/2026-04_Postgraduate.pdf",
+      "url": "https://publicwebsite-media.apu.edu.my/assets/2026-04/e2026_pg_brochure-v2.pdf?VersionId=XtCMIppR9Tjwq0VNWUFMiYXFu_GEit8m",
+      "sha256": "a2bc42f7c9a0465aa0267bd5d3503165ff709ea73c063b67175c6cb8ac83f15f",
+      "extraction_method": "Embedded PDF text, no OCR",
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+    }
+  ],
   "covered_programmes": [
-    "CGD",
-    "CGD(GA)",
-    "CGD(GT)",
-    "CS",
-    "CS(AI)",
-    "CS(CYB)",
-    "CS(CYBDF)",
-    "CS(DA)",
-    "CS(DF)",
-    "CS(QC)",
-    "IMIT",
-    "IMIT(VRAR)",
-    "IT",
-    "IT(BIS)",
-    "IT(CE)",
-    "IT(FT)",
-    "IT(IOT)",
-    "IT(ISS)",
-    "IT(SC)",
-    "SE"
+    {"programme_level": "degree", "programme_keys": ["CGD", "CGD(GA)", "CGD(GT)", "CS", "CS(AI)", "CS(CYB)", "CS(CYBDF)", "CS(DA)", "CS(DF)", "CS(QC)", "IMIT", "IMIT(VRAR)", "IT", "IT(BIS)", "IT(CE)", "IT(FT)", "IT(IOT)", "IT(ISS)", "IT(SC)", "SE"], "source_id": "computing-2026-07", "status": "complete"},
+    {"programme_level": "degree", "programme_keys": ["ACS", "ACS(DA)", "ACS(FT)", "AF", "AF(AT)", "AF(FA)", "AF(FI)", "BAF", "BAF(FT)", "BAF(IA)", "BFT"], "source_id": "accounting-2026-02", "status": "complete"},
+    {"programme_level": "degree", "programme_keys": ["FNT"], "source_id": "accounting-2025-08", "status": "complete", "note": "The scheduled Level 1 modules match the standalone Bachelor of Financial Technology curriculum in the August 2025 brochure."},
+    {"programme_level": "degree", "programme_keys": ["BM", "BM(BA)", "BM(DL)", "BM(E-BUS)", "HPT", "HRM", "IBM", "MKT", "MKT(DM)"], "source_id": "business-2026-03", "status": "complete"},
+    {"programme_level": "degree", "programme_keys": ["TRM", "TRM(HSP)"], "source_id": "business-2026-03", "status": "source_ambiguous", "note": "The brochure labels tourism modules as electives but gives no choose count, and the HSP intake code does not match a current brochure title."},
+    {"programme_level": "degree", "programme_keys": ["IR", "MCS", "PSY"], "source_id": "mip-2026-03", "status": "complete"},
+    {"programme_level": "degree", "programme_keys": ["ANM", "DA", "ID", "VFX"], "source_id": "design-2026-01", "status": "source_ambiguous", "note": "The brochure identifies elective module lists but omits how many modules students choose."},
+    {"programme_level": "degree", "programme_keys": ["ARC"], "source_id": "architecture-2026-01", "status": "complete"},
+    {"programme_level": "degree", "programme_keys": ["CE", "EEE", "MCH", "ME", "PE"], "source_id": "engineering-2026", "status": "complete"},
+    {"programme_level": "degree", "programme_keys": ["IT(DT)"], "source_id": "computing-2025-01", "status": "complete", "note": "The January 2025 brochure defines this discontinued Digital Transformation specialism and lists no student elective choices."},
+    {"programme_level": "degree", "programme_keys": ["TE"], "source_id": null, "status": "source_not_found", "note": "No applicable Telecommunication Engineering curriculum source was found. A much older APU brochure is still indexed, but its modules and elective structure do not match the active schedule."},
+    {"programme_level": "foundation", "programme_keys": ["BF", "CT", "CTODL", "DS", "ENG"], "source_id": "preuniversity-2026-03", "status": "complete"},
+    {"programme_level": "diploma", "programme_keys": ["ACC", "BIT", "BSA", "DSM", "DSM(ANM)", "DSM(DA)", "DSM(ID)", "DSM(MCS)", "DSM(VFX)", "EMT", "HMT", "ICT", "ICT(DI)", "ICT(SE)", "IRS", "ME", "PSY"], "source_id": "preuniversity-2026-03", "status": "complete"},
+    {"programme_level": "diploma", "programme_keys": ["ICT(ITR)"], "source_id": "preuniversity-2025-04", "status": "complete", "note": "The brochure defines Interactive Media and Immersive Technology, Game Art, and Game Technology as separate track packages."},
+    {"programme_level": "certificate", "programme_keys": ["BA", "ICT"], "source_id": "preuniversity-2026-03", "status": "complete"},
+    {"programme_level": "certificate", "programme_keys": ["AS"], "source_id": "preuniversity-2025-04", "status": "complete", "note": "The April 2025 brochure identifies this as Certificate in Administrative Skills and lists no student elective choices."},
+    {"programme_level": "masters", "programme_keys": ["ACC", "ACS", "AFA", "AI", "CYS", "DC", "DIM", "DM", "DSBA(BI)", "DSBA(DE)", "DT", "FIN", "FIN(FINT)", "IBC", "ITM", "LDT", "MBA", "MBA(AI)", "MBA(BA)", "MBA(DL)", "MBA(HT)", "MBA(OGM)", "MBA(SCM)", "PM", "SE", "TM"], "source_id": "postgraduate-2026-04", "status": "complete"},
+    {"programme_level": "doctorate", "programme_keys": ["DBA"], "source_id": "postgraduate-2026-04", "status": "complete"}
   ],
   "known_issues": [
     {
       "code": "legacy-cs-level-3-curriculum-mismatch",
       "intake_pattern": "^(?:APD|APU)3F(?:2511|2601|2605)CS$",
-      "message": "The July 2026 brochure lists Quantum Algorithms and Quantum Machine Learning, while the inspected May 2026 Computer Science schedule lists Distributed Computer Systems and Database Security. These intakes remain unresolved until a matching curriculum source is added."
+      "message": "The July 2026 brochure lists Quantum Algorithms and Quantum Machine Learning, while the inspected Computer Science schedules list Distributed Computer Systems and Database Security. These intakes remain unresolved until a matching curriculum source is added.",
+      "blocks_resolution": true
     }
   ],
   "rules": [
     {
       "id": "se-level-1-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["SE"],
       "academic_level": 1,
       "brochure_page": 25,
@@ -70,6 +175,8 @@
     },
     {
       "id": "se-level-2-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["SE"],
       "academic_level": 2,
       "brochure_page": 25,
@@ -88,6 +195,8 @@
     },
     {
       "id": "se-level-3-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["SE"],
       "academic_level": 3,
       "brochure_page": 25,
@@ -118,6 +227,8 @@
     },
     {
       "id": "cs-level-2-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["CS"],
       "academic_level": 2,
       "brochure_page": 26,
@@ -152,6 +263,8 @@
     },
     {
       "id": "cs-level-3-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["CS"],
       "academic_level": 3,
       "brochure_page": 26,
@@ -193,6 +306,8 @@
     },
     {
       "id": "cyber-security-level-1-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["CS(CYB)"],
       "academic_level": 1,
       "brochure_page": 28,
@@ -210,6 +325,8 @@
     },
     {
       "id": "cyber-security-level-2-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["CS(CYB)"],
       "academic_level": 2,
       "brochure_page": 28,
@@ -229,6 +346,8 @@
     },
     {
       "id": "cyber-security-level-3-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["CS(CYB)"],
       "academic_level": 3,
       "brochure_page": 28,
@@ -250,6 +369,8 @@
     },
     {
       "id": "imit-level-1-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["IMIT"],
       "academic_level": 1,
       "brochure_page": 30,
@@ -275,6 +396,8 @@
     },
     {
       "id": "imit-level-2-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["IMIT"],
       "academic_level": 2,
       "brochure_page": 30,
@@ -292,6 +415,8 @@
     },
     {
       "id": "imit-level-3-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["IMIT"],
       "academic_level": 3,
       "brochure_page": 30,
@@ -309,6 +434,8 @@
     },
     {
       "id": "imit-vrar-level-1-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["IMIT(VRAR)"],
       "academic_level": 1,
       "brochure_page": 31,
@@ -334,6 +461,8 @@
     },
     {
       "id": "imit-vrar-level-2-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["IMIT(VRAR)"],
       "academic_level": 2,
       "brochure_page": 31,
@@ -351,6 +480,8 @@
     },
     {
       "id": "imit-vrar-level-3-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["IMIT(VRAR)"],
       "academic_level": 3,
       "brochure_page": 31,
@@ -372,6 +503,8 @@
     },
     {
       "id": "game-development-level-3-2026-07",
+      "source_id": "computing-2026-07",
+      "programme_level": "degree",
       "programme_keys": ["CGD", "CGD(GA)", "CGD(GT)"],
       "academic_level": 3,
       "brochure_page": 32,
@@ -390,6 +523,774 @@
           ]
         }
       ]
+    },
+    {
+      "id": "foundation-business-finance-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "foundation",
+      "programme_keys": ["BF"],
+      "academic_level": null,
+      "brochure_page": 26,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "foundation-bf-g1",
+        "choose": 1,
+        "options": [
+          {"id": "principles-accounts", "name": "Principles of Accounts"},
+          {"id": "discovering-media", "name": "Discovering Media in the Digital Age"},
+          {"id": "psychology-behaviour", "name": "Psychology & Behavioral Science"},
+          {"id": "hospitality-tourism", "name": "Fundamentals of Hospitality and Tourism Industry", "aliases": ["Fundamentals of Hospitality and Tourism"]}
+        ]
+      }]
+    },
+    {
+      "id": "foundation-computing-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "foundation",
+      "programme_keys": ["CT", "CTODL"],
+      "academic_level": null,
+      "brochure_page": 26,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "foundation-ct-g1",
+        "choose": 1,
+        "options": [
+          {"id": "perspectives-technology", "name": "Perspectives in Technology"},
+          {"id": "discovering-media", "name": "Discovering Media in the Digital Age"},
+          {"id": "psychology-behaviour", "name": "Psychology & Behavioral Science"},
+          {"id": "hospitality-tourism", "name": "Fundamentals of Hospitality and Tourism Industry", "aliases": ["Fundamentals of Hospitality and Tourism"]}
+        ]
+      }]
+    },
+    {
+      "id": "foundation-design-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "foundation",
+      "programme_keys": ["DS"],
+      "academic_level": null,
+      "brochure_page": 26,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "foundation-ds-g1",
+        "choose": 1,
+        "options": [
+          {"id": "history-design-media", "name": "History of Design and Media"},
+          {"id": "intro-architecture", "name": "Introduction to Architecture and Built Environment"}
+        ]
+      }]
+    },
+    {
+      "id": "diploma-ict-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["ICT"],
+      "academic_level": null,
+      "brochure_page": 33,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-ict-g1",
+        "choose": 1,
+        "options": [
+          {"id": "intro-iot", "name": "Introduction to IoT", "aliases": ["Introduction to Internet of Things"]},
+          {"id": "intro-ai", "name": "Introduction to AI", "aliases": ["Introduction to Artificial Intelligence"]}
+        ]
+      }]
+    },
+    {
+      "id": "diploma-ict-se-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["ICT(SE)"],
+      "academic_level": null,
+      "brochure_page": 34,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-ict-se-g1",
+        "choose": 1,
+        "options": [
+          {"id": "devops-low-code", "name": "DevOps and Low Code Development"},
+          {"id": "intro-ai", "name": "Introduction to AI", "aliases": ["Introduction to Artificial Intelligence"]}
+        ]
+      }]
+    },
+    {
+      "id": "diploma-ict-di-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["ICT(DI)"],
+      "academic_level": null,
+      "brochure_page": 35,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-ict-di-g1",
+        "choose": 1,
+        "options": [
+          {"id": "exploratory-data", "name": "Exploratory Data Analytics and Visualisation"},
+          {"id": "intro-ai", "name": "Introduction to AI", "aliases": ["Introduction to Artificial Intelligence"]}
+        ]
+      }]
+    },
+    {
+      "id": "diploma-ict-interactive-tracks-2025-04",
+      "source_id": "preuniversity-2025-04",
+      "programme_level": "diploma",
+      "programme_keys": ["ICT(ITR)"],
+      "academic_level": null,
+      "brochure_page": 35,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-ict-interactive-track-g1",
+        "choose": 1,
+        "options": [
+          {
+            "id": "interactive-media-immersive-technology",
+            "name": "Interactive Media and Immersive Technology track",
+            "modules": [
+              {"name": "Introduction to VRAR and Metaverse"},
+              {"name": "Cyber Security & Forensics", "aliases": ["Cyber Security and Forensics"]},
+              {"name": "Networking Technologies"}
+            ]
+          },
+          {
+            "id": "game-art",
+            "name": "Game Art track",
+            "modules": [
+              {"name": "Fundamentals of Game Development"},
+              {"name": "Fundamentals of Art"},
+              {"name": "Texturing Essentials"}
+            ]
+          },
+          {
+            "id": "game-technology",
+            "name": "Game Technology track",
+            "modules": [
+              {"name": "Fundamentals of Game Development"},
+              {"name": "Data Structure and Algorithms"},
+              {"name": "Networking Technologies"}
+            ]
+          }
+        ]
+      }]
+    },
+    {
+      "id": "diploma-mechatronic-pathway-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["ME"],
+      "academic_level": null,
+      "brochure_page": 40,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-me-pathway-g1",
+        "choose": 1,
+        "options": [
+          {
+            "id": "mechatronic-pathway",
+            "name": "Mechatronic pathway",
+            "modules": [
+              {"name": "Applied Mechanics", "aliases": ["AMC Applied Mechanics"]},
+              {"name": "Microprocessor Systems"},
+              {"name": "PLC and Pneumatics", "aliases": ["PNS PLC and Pneumatics"]},
+              {"name": "Systems and Control"}
+            ]
+          },
+          {
+            "id": "petroleum-exploration-pathway",
+            "name": "Petroleum exploration pathway",
+            "modules": [
+              {"name": "Fundamental of Petroleum Engineering"},
+              {"name": "Petroleum Geochemistry"},
+              {"name": "Elements of Reservoir Rock and Fluid Properties"},
+              {"name": "Petroleum Geology"}
+            ]
+          }
+        ]
+      }]
+    },
+    {
+      "id": "diploma-design-media-routes-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["DSM"],
+      "academic_level": null,
+      "brochure_page": 43,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-design-media-route-g1",
+        "choose": 1,
+        "options": [
+          {
+            "id": "digital-advertising-history",
+            "name": "Digital Advertising pathway: Design History and Context",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Design History and Context"},
+              {"name": "Client Brief Concept"},
+              {"name": "Marketing Fundamentals, Consumer Behaviour and Creative Practice"}
+            ]
+          },
+          {
+            "id": "digital-advertising-pr",
+            "name": "Digital Advertising pathway: Introduction to Public Relations",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Introduction to Public Relations"},
+              {"name": "Client Brief Concept"},
+              {"name": "Marketing Fundamentals, Consumer Behaviour and Creative Practice"}
+            ]
+          },
+          {
+            "id": "animation-history",
+            "name": "Animation pathway: Design History and Context",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Design History and Context"},
+              {"name": "Digital 2D Animation"},
+              {"name": "Advance 3D Pipeline", "aliases": ["Advanced 3D Pipeline"]}
+            ]
+          },
+          {
+            "id": "animation-pr",
+            "name": "Animation pathway: Introduction to Public Relations",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Introduction to Public Relations"},
+              {"name": "Digital 2D Animation"},
+              {"name": "Advance 3D Pipeline", "aliases": ["Advanced 3D Pipeline"]}
+            ]
+          },
+          {
+            "id": "visual-effects-history",
+            "name": "Visual Effects pathway: Design History and Context",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Design History and Context"},
+              {"name": "Digital Compositing for Film"},
+              {"name": "Advance 3D Pipeline", "aliases": ["Advanced 3D Pipeline"]}
+            ]
+          },
+          {
+            "id": "visual-effects-pr",
+            "name": "Visual Effects pathway: Introduction to Public Relations",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Introduction to Public Relations"},
+              {"name": "Digital Compositing for Film"},
+              {"name": "Advance 3D Pipeline", "aliases": ["Advanced 3D Pipeline"]}
+            ]
+          },
+          {
+            "id": "industrial-design-cad",
+            "name": "Industrial Design pathway: C.A.D. Project",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Design History and Context"},
+              {"name": "Design Style and Substance"},
+              {"name": "C.A.D. Project", "aliases": ["CAD Project"]}
+            ]
+          },
+          {
+            "id": "industrial-design-surface-modeling",
+            "name": "Industrial Design pathway: Surface Modeling",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Design History and Context"},
+              {"name": "Design Style and Substance"},
+              {"name": "Surface Modeling", "aliases": ["Surface Modelling"]}
+            ]
+          },
+          {
+            "id": "media-communication",
+            "name": "Media and Communication pathway",
+            "modules": [
+              {"name": "Digital Illustration Techniques"},
+              {"name": "Introduction to Public Relations"},
+              {"name": "Communication Theories"},
+              {"name": "Marketing Fundamentals, Consumer Behaviour and Creative Practice"}
+            ]
+          },
+          {
+            "id": "game-art-history",
+            "name": "Game Art pathway: Design History and Context",
+            "modules": [
+              {"name": "Fundamentals of Games Technology"},
+              {"name": "Design History and Context"},
+              {"name": "Fundamentals of Games Development"},
+              {"name": "Fundamentals of Game Design with UIUX"}
+            ]
+          },
+          {
+            "id": "game-art-pr",
+            "name": "Game Art pathway: Introduction to Public Relations",
+            "modules": [
+              {"name": "Fundamentals of Games Technology"},
+              {"name": "Introduction to Public Relations"},
+              {"name": "Fundamentals of Games Development"},
+              {"name": "Fundamentals of Game Design with UIUX"}
+            ]
+          }
+        ]
+      }]
+    },
+    {
+      "id": "diploma-design-history-or-pr-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["DSM(ANM)", "DSM(DA)", "DSM(VFX)"],
+      "academic_level": null,
+      "brochure_page": 43,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-dsm-history-pr-g1",
+        "choose": 1,
+        "options": [
+          {"id": "design-history-context", "name": "Design History and Context"},
+          {"id": "intro-public-relations", "name": "Introduction to Public Relations"}
+        ]
+      }]
+    },
+    {
+      "id": "diploma-industrial-design-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["DSM(ID)"],
+      "academic_level": null,
+      "brochure_page": 43,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-dsm-id-g1",
+        "choose": 1,
+        "options": [
+          {"id": "cad-project", "name": "C.A.D. Project", "aliases": ["CAD Project"]},
+          {"id": "surface-modeling", "name": "Surface Modeling", "aliases": ["Surface Modelling"]}
+        ]
+      }]
+    },
+    {
+      "id": "diploma-psychology-2026-03",
+      "source_id": "preuniversity-2026-03",
+      "programme_level": "diploma",
+      "programme_keys": ["PSY"],
+      "academic_level": null,
+      "brochure_page": 46,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "diploma-psy-g1",
+        "choose": 1,
+        "options": [
+          {"id": "special-educational-needs", "name": "Special Educational Needs"},
+          {"id": "expressive-arts-therapy", "name": "Expressive Arts Therapy"}
+        ]
+      }]
+    },
+    {
+      "id": "media-level-2-2026-03",
+      "source_id": "mip-2026-03",
+      "programme_level": "degree",
+      "programme_keys": ["MCS"],
+      "academic_level": 2,
+      "brochure_page": 17,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "mcs-l2-g1",
+        "choose": 1,
+        "options": [
+          {"id": "indesign-essentials", "name": "InDesign Essentials"},
+          {"id": "packaging-design", "name": "Packaging Design"}
+        ]
+      }]
+    },
+    {
+      "id": "media-level-3-2026-03",
+      "source_id": "mip-2026-03",
+      "programme_level": "degree",
+      "programme_keys": ["MCS"],
+      "academic_level": 3,
+      "brochure_page": 17,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "mcs-l3-g1",
+        "choose": 1,
+        "options": [
+          {"id": "communication-audit", "name": "Communication Audit and Strategy"},
+          {"id": "persuasive-copywriting", "name": "Persuasive Copywriting"}
+        ]
+      }]
+    },
+    {
+      "id": "psychology-level-3-2026-03",
+      "source_id": "mip-2026-03",
+      "programme_level": "degree",
+      "programme_keys": ["PSY"],
+      "academic_level": 3,
+      "brochure_page": 21,
+      "heading_choose": 2,
+      "groups": [
+        {
+          "id": "psy-l3-g1",
+          "choose": 1,
+          "options": [
+            {"id": "health-psychology", "name": "Health Psychology"},
+            {"id": "cyberpsychology", "name": "Cyberpsychology"}
+          ]
+        },
+        {
+          "id": "psy-l3-g2",
+          "choose": 1,
+          "options": [
+            {"id": "positive-psychology", "name": "Positive Psychology"},
+            {"id": "human-factors-psychology", "name": "Human Factors Psychology"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "electrical-electronic-pathways-2026",
+      "source_id": "engineering-2026",
+      "programme_level": "degree",
+      "programme_keys": ["EEE"],
+      "academic_level": null,
+      "applicable_academic_levels": [3, 4],
+      "brochure_page": 37,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "eee-pathway-g1",
+        "choose": 1,
+        "options": [
+          {"id": "iot", "name": "IoT", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Internet of Things: Concepts and Applications"}, {"name": "Emergent Technology"}]},
+          {"id": "fintech", "name": "FinTech", "modules": [{"name": "FinTech Governance, Risk Management & Compliance", "aliases": ["Fintech Risk Management and Regulations"]}, {"name": "Digital Finance"}, {"name": "Robo Advisor"}]},
+          {"id": "digital-transformation", "name": "Digital Transformation", "modules": [{"name": "Digital Execution"}, {"name": "Digital Strategy & Analytics", "aliases": ["Digital Strategy and Analytics"]}, {"name": "Emergent Technology"}]},
+          {"id": "data-analytics", "name": "Data Analytics", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Behavioral Science and Marketing Analytics", "aliases": ["Behavioural Science and Marketing Analytics"]}, {"name": "Optimization & Deep Learning", "aliases": ["Optimisation and Deep Learning"]}]},
+          {"id": "artificial-intelligence", "name": "Artificial Intelligence", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "Text Analysis & Sentiment Analysis", "aliases": ["Text Analysis and Sentiment Analysis"]}, {"name": "Emergent Technology"}]},
+          {"id": "digital-age-psychology", "name": "Digital Age Psychology", "modules": [{"name": "Industrial & Organizational Psychology", "aliases": ["Industrial and Organisational Psychology", "Industrial and Organizational Psychology"]}, {"name": "Cyberpsychology"}, {"name": "Human Factors Psychology"}]},
+          {"id": "smart-drones", "name": "Smart Drones", "modules": [{"name": "Robotic Technology"}, {"name": "Robot Operating Systems", "aliases": ["Robot Navigation & Mapping with ROS"]}, {"name": "Drone Technology"}]},
+          {"id": "smart-manufacturing", "name": "Smart Manufacturing", "modules": [{"name": "Robotic Technology"}, {"name": "Robot Operating Systems", "aliases": ["Robot Navigation & Mapping with ROS"]}, {"name": "Product Creation Technology"}]},
+          {"id": "drilling-technology", "name": "Drilling Technology", "modules": [{"name": "Drilling Fluids & Hydraulics"}, {"name": "Directional Drilling & Surveying", "aliases": ["Directional Drilling and Surveying"]}, {"name": "Well Control"}]},
+          {"id": "intelligent-manufacturing", "name": "Intelligent Design and Manufacturing Technologies", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "CAD/CAM"}, {"name": "Product Creation Technology"}]},
+          {"id": "oil-gas-operations", "name": "Oil and Gas Operations", "modules": [{"name": "Gas Engineering"}, {"name": "Petroleum Economics"}, {"name": "Drilling Fluids & Hydraulics"}]}
+        ]
+      }]
+    },
+    {
+      "id": "mechanical-mechatronic-pathways-2026",
+      "source_id": "engineering-2026",
+      "programme_level": "degree",
+      "programme_keys": ["MCH", "ME"],
+      "academic_level": null,
+      "applicable_academic_levels": [3, 4],
+      "brochure_page": 39,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "mechanical-mechatronic-pathway-g1",
+        "choose": 1,
+        "options": [
+          {"id": "iot", "name": "IoT", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Internet of Things: Concepts and Applications"}, {"name": "Emergent Technology"}]},
+          {"id": "fintech", "name": "FinTech", "modules": [{"name": "FinTech Governance, Risk Management & Compliance", "aliases": ["Fintech Risk Management and Regulations"]}, {"name": "Digital Finance"}, {"name": "Robo Advisor"}]},
+          {"id": "digital-transformation", "name": "Digital Transformation", "modules": [{"name": "Digital Execution"}, {"name": "Digital Strategy & Analytics", "aliases": ["Digital Strategy and Analytics"]}, {"name": "Emergent Technology"}]},
+          {"id": "data-analytics", "name": "Data Analytics", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Behavioral Science and Marketing Analytics", "aliases": ["Behavioural Science and Marketing Analytics"]}, {"name": "Optimization & Deep Learning", "aliases": ["Optimisation and Deep Learning"]}]},
+          {"id": "artificial-intelligence", "name": "Artificial Intelligence", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "Text Analysis & Sentiment Analysis", "aliases": ["Text Analysis and Sentiment Analysis"]}, {"name": "Emergent Technology"}]},
+          {"id": "digital-age-psychology", "name": "Digital Age Psychology", "modules": [{"name": "Industrial & Organizational Psychology", "aliases": ["Industrial and Organisational Psychology", "Industrial and Organizational Psychology"]}, {"name": "Cyberpsychology"}, {"name": "Human Factors Psychology"}]},
+          {"id": "unmanned-aerial-vehicles", "name": "Unmanned Aerial Vehicles", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "Robot Operating Systems", "aliases": ["Robot Navigation & Mapping with ROS"]}, {"name": "Drone Technology"}]},
+          {"id": "drilling-technology", "name": "Drilling Technology", "modules": [{"name": "Drilling Fluids & Hydraulics"}, {"name": "Directional Drilling & Surveying", "aliases": ["Directional Drilling and Surveying"]}, {"name": "Well Control"}]},
+          {"id": "oil-gas-operations", "name": "Oil and Gas Operations", "modules": [{"name": "Gas Engineering"}, {"name": "Petroleum Economics"}, {"name": "Drilling Fluids & Hydraulics"}]},
+          {"id": "smart-robotics", "name": "Smart Robotics", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "Robot Operating Systems", "aliases": ["Robot Navigation & Mapping with ROS"]}, {"name": "Product Creation Technology"}]}
+        ]
+      }]
+    },
+    {
+      "id": "computer-engineering-pathways-2026",
+      "source_id": "engineering-2026",
+      "programme_level": "degree",
+      "programme_keys": ["CE"],
+      "academic_level": null,
+      "applicable_academic_levels": [3, 4],
+      "brochure_page": 43,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "ce-pathway-g1",
+        "choose": 1,
+        "options": [
+          {"id": "cloud-computing", "name": "Cloud Computing", "modules": [{"name": "Designing and Developing Applications on Cloud", "aliases": ["Designing and Developing Applications on the Cloud"]}, {"name": "Cloud Infrastructure and Services"}, {"name": "Emergent Technology"}]},
+          {"id": "iot", "name": "IoT", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Internet of Things: Concepts and Applications"}, {"name": "Emergent Technology"}]},
+          {"id": "fintech", "name": "FinTech", "modules": [{"name": "FinTech Governance, Risk Management & Compliance", "aliases": ["Fintech Risk Management and Regulations"]}, {"name": "Digital Finance"}, {"name": "Robo Advisor"}]},
+          {"id": "digital-transformation", "name": "Digital Transformation", "modules": [{"name": "Digital Execution"}, {"name": "Digital Strategy & Analytics", "aliases": ["Digital Strategy and Analytics"]}, {"name": "Emergent Technology"}]},
+          {"id": "data-analytics", "name": "Data Analytics", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Behavioral Science and Marketing Analytics", "aliases": ["Behavioural Science and Marketing Analytics"]}, {"name": "Optimization & Deep Learning", "aliases": ["Optimisation and Deep Learning"]}]},
+          {"id": "artificial-intelligence", "name": "Artificial Intelligence", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "Text Analysis & Sentiment Analysis", "aliases": ["Text Analysis and Sentiment Analysis"]}, {"name": "Emergent Technology"}]},
+          {"id": "digital-age-psychology", "name": "Digital Age Psychology", "modules": [{"name": "Industrial & Organizational Psychology", "aliases": ["Industrial and Organisational Psychology", "Industrial and Organizational Psychology"]}, {"name": "Cyberpsychology"}, {"name": "Human Factors Psychology"}]}
+        ]
+      }]
+    },
+    {
+      "id": "petroleum-engineering-pathways-2026",
+      "source_id": "engineering-2026",
+      "programme_level": "degree",
+      "programme_keys": ["PE"],
+      "academic_level": null,
+      "applicable_academic_levels": [3, 4],
+      "brochure_page": 45,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "pe-pathway-g1",
+        "choose": 1,
+        "options": [
+          {"id": "iot", "name": "IoT", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Internet of Things: Concepts and Applications"}, {"name": "Emergent Technology"}]},
+          {"id": "fintech", "name": "FinTech", "modules": [{"name": "FinTech Governance, Risk Management & Compliance", "aliases": ["Fintech Risk Management and Regulations"]}, {"name": "Digital Finance"}, {"name": "Robo Advisor"}]},
+          {"id": "digital-transformation", "name": "Digital Transformation", "modules": [{"name": "Digital Execution"}, {"name": "Digital Strategy & Analytics", "aliases": ["Digital Strategy and Analytics"]}, {"name": "Emergent Technology"}]},
+          {"id": "data-analytics", "name": "Data Analytics", "modules": [{"name": "Knowledge Discovery and Big Data Analytics"}, {"name": "Behavioral Science and Marketing Analytics", "aliases": ["Behavioural Science and Marketing Analytics"]}, {"name": "Optimization & Deep Learning", "aliases": ["Optimisation and Deep Learning"]}]},
+          {"id": "artificial-intelligence", "name": "Artificial Intelligence", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "Text Analysis & Sentiment Analysis", "aliases": ["Text Analysis and Sentiment Analysis"]}, {"name": "Emergent Technology"}]},
+          {"id": "digital-age-psychology", "name": "Digital Age Psychology", "modules": [{"name": "Industrial & Organizational Psychology", "aliases": ["Industrial and Organisational Psychology", "Industrial and Organizational Psychology"]}, {"name": "Cyberpsychology"}, {"name": "Human Factors Psychology"}]},
+          {"id": "smart-drones", "name": "Smart Drones", "modules": [{"name": "Robotic Technology"}, {"name": "Robot Operating Systems", "aliases": ["Robot Navigation & Mapping with ROS"]}, {"name": "Drone Technology"}]},
+          {"id": "smart-manufacturing", "name": "Smart Manufacturing", "modules": [{"name": "Robotic Technology"}, {"name": "Robot Operating Systems", "aliases": ["Robot Navigation & Mapping with ROS"]}, {"name": "Product Creation Technology"}]},
+          {"id": "intelligent-manufacturing", "name": "Intelligent Design and Manufacturing Technologies", "modules": [{"name": "Machine Vision Intelligence", "aliases": ["Machine Vision Intelligence (MVI)", "Machine Vision and Intelligence"]}, {"name": "CAD/CAM"}, {"name": "Product Creation Technology"}]},
+          {"id": "drilling-technology", "name": "Drilling Technology", "modules": [{"name": "Drilling Fluids & Hydraulics"}, {"name": "Directional Drilling & Surveying", "aliases": ["Directional Drilling and Surveying"]}, {"name": "Well Control"}]}
+        ]
+      }]
+    },
+    {
+      "id": "masters-software-engineering-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["SE"],
+      "academic_level": null,
+      "brochure_page": 13,
+      "heading_choose": 3,
+      "groups": [{
+        "id": "masters-se-g1",
+        "choose": 3,
+        "options": [
+          {"id": "internet-applications", "name": "Internet Applications"},
+          {"id": "network-design", "name": "Network Design & Performance"},
+          {"id": "data-management", "name": "Data Management"},
+          {"id": "big-data", "name": "Big Data Analytics and Technologies"},
+          {"id": "nlp", "name": "Natural Language Processing"}
+        ]
+      }]
+    },
+    {
+      "id": "masters-artificial-intelligence-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["AI"],
+      "academic_level": null,
+      "brochure_page": 14,
+      "heading_choose": 3,
+      "groups": [{
+        "id": "masters-ai-g1",
+        "choose": 3,
+        "options": [
+          {"id": "applied-robotics", "name": "Applied Robotics"},
+          {"id": "pattern-recognition", "name": "Pattern Recognition"},
+          {"id": "expert-systems", "name": "Expert Systems and Knowledge Engineering"},
+          {"id": "business-intelligence", "name": "Business Intelligence Systems"},
+          {"id": "multivariate-methods", "name": "Multivariate Methods for Data Analysis"},
+          {"id": "deep-learning", "name": "Deep Learning"}
+        ]
+      }]
+    },
+    {
+      "id": "masters-cyber-security-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["CYS"],
+      "academic_level": null,
+      "brochure_page": 16,
+      "heading_choose": 3,
+      "groups": [{
+        "id": "masters-cys-g1",
+        "choose": 3,
+        "options": [
+          {"id": "e-investigation", "name": "E-Investigation"},
+          {"id": "network-design", "name": "Network Design & Performance"},
+          {"id": "security-architectures", "name": "Information Security Architectures"},
+          {"id": "security-audit", "name": "Security Audit and Assessment", "aliases": ["Security Auditing Assessment"]},
+          {"id": "applied-scripting", "name": "Applied Scripting in Cyber Security"}
+        ]
+      }]
+    },
+    {
+      "id": "masters-dsba-bi-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["DSBA(BI)"],
+      "academic_level": null,
+      "brochure_page": 18,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "masters-dsba-bi-g1",
+        "choose": 1,
+        "options": [
+          {"id": "emerging-markets", "name": "Strategies in Emerging Markets"},
+          {"id": "multilevel-data", "name": "Multilevel Data Analysis"},
+          {"id": "operational-research", "name": "Operational Research and Optimization", "aliases": ["Operational Research and Optimisation", "Operations Research and Optimization"]}
+        ]
+      }]
+    },
+    {
+      "id": "masters-dsba-de-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["DSBA(DE)"],
+      "academic_level": null,
+      "brochure_page": 18,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "masters-dsba-de-g1",
+        "choose": 1,
+        "options": [
+          {"id": "nlp", "name": "Natural Language Processing"},
+          {"id": "iot-applications", "name": "Building IoT Applications", "aliases": ["Building IOT Application"]},
+          {"id": "data-protection", "name": "Data Protection and Management"}
+        ]
+      }]
+    },
+    {
+      "id": "masters-digital-transformation-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["DT"],
+      "academic_level": null,
+      "brochure_page": 19,
+      "heading_choose": 3,
+      "groups": [{
+        "id": "masters-dt-g1",
+        "choose": 3,
+        "options": [
+          {"id": "iot-application", "name": "Building IoT Application", "aliases": ["Building IOT Application"]},
+          {"id": "financial-technology", "name": "Financial Technology"},
+          {"id": "cyber-security", "name": "Cyber Security & Threats", "aliases": ["Cyber Security and Threats"]},
+          {"id": "big-data", "name": "Big Data Analytics and Technologies"}
+        ]
+      }]
+    },
+    {
+      "id": "masters-it-management-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["ITM"],
+      "academic_level": null,
+      "brochure_page": 19,
+      "heading_choose": 3,
+      "groups": [
+        {
+          "id": "masters-itm-g1",
+          "choose": 1,
+          "options": [
+            {"id": "internet-applications", "name": "Internet Applications"},
+            {"id": "enterprise-applications", "name": "Enterprise Applications"}
+          ]
+        },
+        {
+          "id": "masters-itm-g2",
+          "choose": 2,
+          "options": [
+            {"id": "security-architectures", "name": "Information Security Architectures"},
+            {"id": "network-design", "name": "Network Design & Performance"},
+            {"id": "data-management", "name": "Data Management"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "masters-technology-management-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["TM"],
+      "academic_level": null,
+      "brochure_page": 20,
+      "heading_choose": 2,
+      "groups": [
+        {
+          "id": "masters-tm-g1",
+          "choose": 1,
+          "options": [
+            {"id": "digital-execution", "name": "Digital Execution"},
+            {"id": "data-management", "name": "Data Management"}
+          ]
+        },
+        {
+          "id": "masters-tm-g2",
+          "choose": 1,
+          "options": [
+            {"id": "strategic-marketing", "name": "Strategic Marketing Management"},
+            {"id": "sustainable-marketing", "name": "Marketing and Sustainability in the Age of Globalisation"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "masters-project-management-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["PM"],
+      "academic_level": null,
+      "brochure_page": 26,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "masters-pm-pathway-g1",
+        "choose": 1,
+        "options": [
+          {"id": "analytical-decision-making", "name": "Analytical Decision Making pathway", "modules": [{"name": "Strategic Planning and Systems Development"}, {"name": "Quantitative Methods for Decision Making"}]},
+          {"id": "management", "name": "Management pathway", "modules": [{"name": "Managing Creativity and Innovation"}, {"name": "Managing Organisations", "aliases": ["Managing Organizations"]}]},
+          {"id": "digitalisation", "name": "Digitalisation pathway", "modules": [{"name": "Digital Execution"}, {"name": "Digital Project Management"}]}
+        ]
+      }]
+    },
+    {
+      "id": "masters-design-innovation-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["DIM"],
+      "academic_level": null,
+      "brochure_page": 30,
+      "heading_choose": 1,
+      "groups": [{
+        "id": "masters-dim-g1",
+        "choose": 1,
+        "options": [
+          {"id": "intellectual-property", "name": "Intellectual Property"},
+          {"id": "creative-sustainability", "name": "Creative Sustainability"},
+          {"id": "technology-management", "name": "Technology Management"},
+          {"id": "design-retail", "name": "Design for Retail"},
+          {"id": "business-web-presence", "name": "Managing Business Web Presence"}
+        ]
+      }]
+    },
+    {
+      "id": "masters-actuarial-science-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["ACS"],
+      "academic_level": null,
+      "brochure_page": 31,
+      "heading_choose": 2,
+      "groups": [{
+        "id": "masters-acs-g1",
+        "choose": 2,
+        "options": [
+          {"id": "risk-modelling-two", "name": "Risk Modelling and Survival Analysis II"},
+          {"id": "financial-engineering-two", "name": "Financial Engineering and Loss Reserving II"},
+          {"id": "big-data", "name": "Big Data Analytics and Technologies"},
+          {"id": "advanced-business-analytics", "name": "Advanced Business Analytics and Visualization", "aliases": ["Advanced Business Analytics and Visualisation"]}
+        ]
+      }]
+    },
+    {
+      "id": "masters-learning-design-2026-04",
+      "source_id": "postgraduate-2026-04",
+      "programme_level": "masters",
+      "programme_keys": ["LDT"],
+      "academic_level": null,
+      "brochure_page": 32,
+      "heading_choose": 2,
+      "groups": [{
+        "id": "masters-ldt-g1",
+        "choose": 2,
+        "options": [
+          {"id": "cybersecurity-edtech", "name": "Cybersecurity in Educational Technology"},
+          {"id": "video-games-education", "name": "Video Games and Education"},
+          {"id": "managing-creativity", "name": "Managing Creativity and Innovation"}
+        ]
+      }]
     }
   ]
 }
