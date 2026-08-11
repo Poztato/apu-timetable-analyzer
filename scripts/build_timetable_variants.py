@@ -13,13 +13,30 @@ from typing import Any, Mapping, Sequence
 
 import pandas as pd
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.electives import (
+    ElectiveRuleError,
+    load_elective_config,
+    resolve_elective_profiles,
+)
+
 
 INDEX_RELATIVE_PATH = Path("data/snapshots/index.json")
 PROCESSED_DIRECTORY_RELATIVE_PATH = Path("data/processed")
+ELECTIVE_CONFIG_RELATIVE_PATH = Path("config/elective_rules.json")
 INPUT_FILENAME = "events.parquet"
 OUTPUT_FILENAME = "variant_events.parquet"
+REPORT_FILENAME = "elective_inference_report.json"
 
-VARIANT_KEY = ["snapshot_id", "week_start", "intake_code", "grouping"]
+VARIANT_KEY = [
+    "snapshot_id",
+    "week_start",
+    "intake_code",
+    "grouping",
+    "elective_profile",
+]
 INTAKE_WEEK_KEY = ["snapshot_id", "week_start", "intake_code"]
 SLOT_SCOPE_KEY = ["snapshot_id", "week_start", "intake_code", "slot_id"]
 
@@ -46,8 +63,15 @@ IDENTIFIER_COLUMNS = [
     "week_start",
     "intake_code",
     "grouping",
+    "elective_profile",
+    "elective_profile_name",
+    "elective_status",
+    "elective_rule_id",
     "source_grouping",
     "is_common_event",
+    "is_elective",
+    "elective_group_id",
+    "elective_option_id",
     "is_shared_slot",
     "shared_group_count",
 ]
@@ -75,6 +99,7 @@ def _variant_id(row: Any) -> str:
             "week_start": row.week_start.isoformat(),
             "intake_code": row.intake_code,
             "grouping": row.grouping,
+            "elective_profile": row.elective_profile,
         }
     )
 
@@ -199,10 +224,11 @@ def _expand_group_variants(events: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(expanded_parts, ignore_index=True)
 
 
-def construct_timetable_variants(
+def _construct_timetable_variants(
     events: pd.DataFrame,
-) -> tuple[pd.DataFrame, dict[str, int]]:
-    """Build one event-membership table for every intake, week, and group."""
+    elective_config: Mapping[str, Any] | None,
+) -> tuple[pd.DataFrame, dict[str, int], dict[str, Any]]:
+    """Build one event-membership table for every group and elective profile."""
 
     _validate_events(events)
     source = events.copy()
@@ -215,7 +241,13 @@ def construct_timetable_variants(
         source["source_grouping"].str.upper() == "ALL", "source_grouping"
     ] = "ALL"
 
-    variants = _expand_group_variants(source)
+    group_variants = _expand_group_variants(source)
+    try:
+        variants, elective_report = resolve_elective_profiles(
+            group_variants, elective_config
+        )
+    except ElectiveRuleError as exc:
+        raise VariantError(f"Elective inference failed: {exc}") from exc
     variants["variant_id"] = [_variant_id(row) for row in variants.itertuples()]
     variants["slot_id"] = [_slot_id(row) for row in variants.itertuples()]
     variants["variant_event_id"] = [
@@ -241,6 +273,7 @@ def construct_timetable_variants(
             "week_start",
             "intake_code",
             "grouping",
+            "elective_profile",
             "start_at",
             "end_at",
             "module_id",
@@ -276,7 +309,35 @@ def construct_timetable_variants(
         "common_source_event_count": int((source["source_grouping"] == "ALL").sum()),
         "common_event_assignment_count": int(variants["is_common_event"].sum()),
         "multi_record_variant_slot_count": int((multi_record_slot_counts > 1).sum()),
+        "elective_profile_count": int(
+            variants[
+                ["snapshot_id", "intake_code", "elective_profile"]
+            ].drop_duplicates().shape[0]
+        ),
+        "resolved_elective_intake_count": int(
+            elective_report["status_counts"].get("resolved", 0)
+        ),
+        "unverified_elective_intake_count": int(
+            elective_report["status_counts"].get(
+                "source_version_unverified", 0
+            )
+        ),
+        "uncovered_elective_intake_count": int(
+            elective_report["status_counts"].get("programme_uncovered", 0)
+        ),
     }
+    return variants, statistics, elective_report
+
+
+def construct_timetable_variants(
+    events: pd.DataFrame,
+    elective_config: Mapping[str, Any] | None = None,
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    """Build timetable variants and retain the historical two-value API."""
+
+    variants, statistics, _ = _construct_timetable_variants(
+        events, elective_config
+    )
     return variants, statistics
 
 
@@ -309,8 +370,34 @@ def _write_parquet_atomically(frame: pd.DataFrame, target: Path) -> None:
             temporary_path.unlink()
 
 
+def _write_json_atomically(value: Mapping[str, Any], target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="\n",
+            dir=target.parent,
+            prefix=f".{target.stem}.",
+            suffix=".json",
+            delete=False,
+        ) as temporary_file:
+            temporary_path = Path(temporary_file.name)
+            json.dump(value, temporary_file, indent=2, ensure_ascii=False)
+            temporary_file.write("\n")
+        os.replace(temporary_path, target)
+    except OSError as exc:
+        raise VariantError(f"Cannot write elective report: {target}.") from exc
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
+
+
 def build_snapshot_variants(
-    snapshot_id: str, repository_root: Path
+    snapshot_id: str,
+    repository_root: Path,
+    elective_config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Read Stage 2 events and write the Stage 3 variant event table."""
 
@@ -319,6 +406,7 @@ def build_snapshot_variants(
     )
     input_path = snapshot_directory / INPUT_FILENAME
     output_path = snapshot_directory / OUTPUT_FILENAME
+    report_path = snapshot_directory / REPORT_FILENAME
     try:
         events = pd.read_parquet(input_path, engine="pyarrow")
     except FileNotFoundError as exc:
@@ -338,8 +426,12 @@ def build_snapshot_variants(
             f"Stage 2 events do not belong only to snapshot {snapshot_id}."
         )
 
-    variants, statistics = construct_timetable_variants(events)
+    variants, statistics, elective_report = _construct_timetable_variants(
+        events, elective_config
+    )
     _write_parquet_atomically(variants, output_path)
+    elective_report = {"snapshot_id": snapshot_id, **elective_report}
+    _write_json_atomically(elective_report, report_path)
 
     variant_group_counts = (
         variants[["variant_id", "grouping"]]
@@ -357,6 +449,10 @@ def build_snapshot_variants(
             str(grouping): int(count)
             for grouping, count in variant_group_counts.items()
         },
+        "elective_status_counts": elective_report["status_counts"],
+        "elective_report_path": report_path.relative_to(
+            repository_root
+        ).as_posix(),
         "output_path": output_path.relative_to(repository_root).as_posix(),
         "output_size_bytes": output_path.stat().st_size,
     }
@@ -417,11 +513,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         index = load_snapshot_index(repository_root / INDEX_RELATIVE_PATH)
+        try:
+            elective_config = load_elective_config(
+                repository_root / ELECTIVE_CONFIG_RELATIVE_PATH
+            )
+        except ElectiveRuleError as exc:
+            raise VariantError(str(exc)) from exc
         snapshot_ids = _select_snapshot_ids(
             index, arguments.snapshot_id, arguments.all
         )
         summaries = [
-            build_snapshot_variants(snapshot_id, repository_root)
+            build_snapshot_variants(
+                snapshot_id, repository_root, elective_config
+            )
             for snapshot_id in snapshot_ids
         ]
     except VariantError as exc:

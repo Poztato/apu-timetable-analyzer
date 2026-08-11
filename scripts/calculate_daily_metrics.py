@@ -1,4 +1,4 @@
-"""Calculate daily timetable measures for each group-specific variant."""
+"""Calculate daily timetable measures for each student schedule variant."""
 
 from __future__ import annotations
 
@@ -21,7 +21,13 @@ PROCESSED_DIRECTORY_RELATIVE_PATH = Path("data/processed")
 INPUT_FILENAME = "variant_events.parquet"
 OUTPUT_FILENAME = "daily_metrics.parquet"
 
-VARIANT_KEY = ["snapshot_id", "week_start", "intake_code", "grouping"]
+VARIANT_KEY = [
+    "snapshot_id",
+    "week_start",
+    "intake_code",
+    "grouping",
+    "elective_profile",
+]
 DAILY_KEY = [*VARIANT_KEY, "event_date"]
 
 REQUIRED_COLUMNS = {
@@ -32,6 +38,10 @@ REQUIRED_COLUMNS = {
     "week_start",
     "intake_code",
     "grouping",
+    "elective_profile",
+    "elective_profile_name",
+    "elective_status",
+    "elective_rule_id",
     "event_date",
     "start_at",
     "end_at",
@@ -60,6 +70,10 @@ OUTPUT_COLUMNS = [
     "week_start",
     "intake_code",
     "grouping",
+    "elective_profile",
+    "elective_profile_name",
+    "elective_status",
+    "elective_rule_id",
     "event_date",
     "day_of_week",
     "is_weekend",
@@ -299,6 +313,10 @@ def _calculate_day(
         "week_start": day_events["week_start"].iloc[0],
         "intake_code": day_events["intake_code"].iloc[0],
         "grouping": day_events["grouping"].iloc[0],
+        "elective_profile": day_events["elective_profile"].iloc[0],
+        "elective_profile_name": day_events["elective_profile_name"].iloc[0],
+        "elective_status": day_events["elective_status"].iloc[0],
+        "elective_rule_id": day_events["elective_rule_id"].iloc[0],
         "event_date": day_events["event_date"].iloc[0],
         "day_of_week": day_events["event_date"].iloc[0].strftime("%a").upper(),
         "is_weekend": day_events["event_date"].iloc[0].weekday() >= 5,
@@ -382,6 +400,10 @@ def calculate_daily_metrics(
         "snapshot_id",
         "intake_code",
         "grouping",
+        "elective_profile",
+        "elective_profile_name",
+        "elective_status",
+        "elective_rule_id",
         "day_of_week",
         *[
             column
@@ -393,7 +415,14 @@ def calculate_daily_metrics(
         metrics[column] = metrics[column].astype("string")
 
     metrics = metrics.sort_values(
-        ["snapshot_id", "week_start", "intake_code", "grouping", "event_date"],
+        [
+            "snapshot_id",
+            "week_start",
+            "intake_code",
+            "grouping",
+            "elective_profile",
+            "event_date",
+        ],
         kind="stable",
     ).reset_index(drop=True)
     if metrics.duplicated(DAILY_KEY).any():

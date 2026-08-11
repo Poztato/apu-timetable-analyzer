@@ -1,0 +1,394 @@
+{
+  "schema_version": 1,
+  "source": {
+    "title": "APU Computing, Technology, Software Engineering, Data Science, AI, Cyber Security, Game Development and VR/AR brochure",
+    "edition": "July 2026",
+    "local_path": "OneDrive_2026-08-10/e2026July_Computing.pdf",
+    "sha256": "9687dcdfa70ce69d6a6e4fc8e36c79df1b60e3c4d23a323f265cc2713b7f649e",
+    "extraction_method": "Embedded PDF text, no OCR"
+  },
+  "applicability": {
+    "minimum_intake_year_month": 202607,
+    "verified_legacy_intakes": [
+      "APD3F2605CS(CYB)",
+      "APD3F2605IMIT",
+      "APD3F2605IMIT(VRAR)",
+      "APD3F2605SE",
+      "APU3F2605CS(CYB)",
+      "APU3F2605IMIT",
+      "APU3F2605IMIT(VRAR)",
+      "APU3F2605SE"
+    ]
+  },
+  "covered_programmes": [
+    "CGD",
+    "CGD(GA)",
+    "CGD(GT)",
+    "CS",
+    "CS(AI)",
+    "CS(CYB)",
+    "CS(CYBDF)",
+    "CS(DA)",
+    "CS(DF)",
+    "CS(QC)",
+    "IMIT",
+    "IMIT(VRAR)",
+    "IT",
+    "IT(BIS)",
+    "IT(CE)",
+    "IT(FT)",
+    "IT(IOT)",
+    "IT(ISS)",
+    "IT(SC)",
+    "SE"
+  ],
+  "known_issues": [
+    {
+      "code": "legacy-cs-level-3-curriculum-mismatch",
+      "intake_pattern": "^(?:APD|APU)3F(?:2511|2601|2605)CS$",
+      "message": "The July 2026 brochure lists Quantum Algorithms and Quantum Machine Learning, while the inspected May 2026 Computer Science schedule lists Distributed Computer Systems and Database Security. These intakes remain unresolved until a matching curriculum source is added."
+    }
+  ],
+  "rules": [
+    {
+      "id": "se-level-1-2026-07",
+      "programme_keys": ["SE"],
+      "academic_level": 1,
+      "brochure_page": 25,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "se-l1-g1",
+          "choose": 1,
+          "options": [
+            {"id": "intro-ai", "name": "Introduction to Artificial Intelligence"},
+            {"id": "fundamentals-web", "name": "Fundamentals of Web Design & Development"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "se-level-2-2026-07",
+      "programme_keys": ["SE"],
+      "academic_level": 2,
+      "brochure_page": 25,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "se-l2-g1",
+          "choose": 1,
+          "options": [
+            {"id": "concurrent-programming", "name": "Concurrent Programming"},
+            {"id": "further-web", "name": "Further Web Design & Development"},
+            {"id": "mobile-app-engineering", "name": "Mobile App Engineering"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "se-level-3-2026-07",
+      "programme_keys": ["SE"],
+      "academic_level": 3,
+      "brochure_page": 25,
+      "heading_choose": 2,
+      "groups": [
+        {
+          "id": "se-l3-g1",
+          "choose": 1,
+          "options": [
+            {"id": "distributed-computer-systems", "name": "Distributed Computer Systems"},
+            {
+              "id": "enterprise-distributed-applications",
+              "name": "Enterprise Programming for Distributed Applications",
+              "aliases": ["Enterprise Programming for Distributed Application"]
+            },
+            {"id": "blockchain-development", "name": "Blockchain Development"}
+          ]
+        },
+        {
+          "id": "se-l3-g2",
+          "choose": 1,
+          "options": [
+            {"id": "advanced-database-systems", "name": "Advanced Database Systems"},
+            {"id": "optimisation-deep-learning", "name": "Optimisation and Deep Learning"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cs-level-2-2026-07",
+      "programme_keys": ["CS"],
+      "academic_level": 2,
+      "brochure_page": 26,
+      "heading_choose": 3,
+      "groups": [
+        {
+          "id": "cs-l2-g1",
+          "choose": 1,
+          "options": [
+            {"id": "programming-data-analysis", "name": "Programming for Data Analysis"},
+            {"id": "probability-statistical-modelling", "name": "Probability and Statistical Modelling"}
+          ]
+        },
+        {
+          "id": "cs-l2-g2",
+          "choose": 1,
+          "options": [
+            {"id": "business-intelligence-systems", "name": "Business Intelligence Systems"},
+            {"id": "network-security", "name": "Network Security"}
+          ]
+        },
+        {
+          "id": "cs-l2-g3",
+          "choose": 1,
+          "options": [
+            {"id": "mobile-wireless-technology", "name": "Mobile and Wireless Technology"},
+            {"id": "mobile-app-engineering", "name": "Mobile App Engineering"},
+            {"id": "fundamentals-quantum-computing", "name": "Fundamentals of Quantum Computing"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cs-level-3-2026-07",
+      "programme_keys": ["CS"],
+      "academic_level": 3,
+      "brochure_page": 26,
+      "heading_choose": 4,
+      "groups": [
+        {
+          "id": "cs-l3-g1",
+          "choose": 1,
+          "options": [
+            {"id": "computer-systems-security", "name": "Computer Systems Security"},
+            {"id": "quantum-algorithms", "name": "Quantum Algorithms"}
+          ]
+        },
+        {
+          "id": "cs-l3-g2",
+          "choose": 1,
+          "options": [
+            {"id": "image-processing", "name": "Image Processing, Computer Vision and Pattern Recognition"},
+            {"id": "blockchain-development", "name": "Blockchain Development"}
+          ]
+        },
+        {
+          "id": "cs-l3-g3",
+          "choose": 1,
+          "options": [
+            {"id": "cloud-applications", "name": "Designing and Developing Applications on the Cloud"},
+            {"id": "quantum-machine-learning", "name": "Quantum Machine Learning"}
+          ]
+        },
+        {
+          "id": "cs-l3-g4",
+          "choose": 1,
+          "options": [
+            {"id": "wireless-mobile-security", "name": "Wireless and Mobile Security"},
+            {"id": "optimisation-deep-learning", "name": "Optimisation and Deep Learning"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cyber-security-level-1-2026-07",
+      "programme_keys": ["CS(CYB)"],
+      "academic_level": 1,
+      "brochure_page": 28,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "cyb-l1-g1",
+          "choose": 1,
+          "options": [
+            {"id": "intro-ai", "name": "Introduction to Artificial Intelligence"},
+            {"id": "intro-oop", "name": "Introduction to Object-Oriented Programming"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cyber-security-level-2-2026-07",
+      "programme_keys": ["CS(CYB)"],
+      "academic_level": 2,
+      "brochure_page": 28,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "cyb-l2-g1",
+          "choose": 1,
+          "options": [
+            {"id": "ethical-hacking-incident-response", "name": "Ethical Hacking and Incident Response"},
+            {"id": "secure-systems", "name": "Implementation of Secure Systems"},
+            {"id": "social-psychology", "name": "Social Psychology"},
+            {"id": "fundamentals-quantum-computing", "name": "Fundamentals of Quantum Computing"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cyber-security-level-3-2026-07",
+      "programme_keys": ["CS(CYB)"],
+      "academic_level": 3,
+      "brochure_page": 28,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "cyb-l3-g1",
+          "choose": 1,
+          "options": [
+            {"id": "cloud-infrastructure-services", "name": "Cloud Infrastructure & Services"},
+            {"id": "iot-concepts-applications", "name": "Internet of Things: Concepts & Applications"},
+            {"id": "network-threat-management", "name": "Network Threat Management and Defense"},
+            {"id": "devsecops", "name": "DevSecOps Principles and Practices"},
+            {"id": "cyberpsychology", "name": "Cyberpsychology"},
+            {"id": "quantum-circuits-algorithms", "name": "Quantum Circuits and Algorithms"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imit-level-1-2026-07",
+      "programme_keys": ["IMIT"],
+      "academic_level": 1,
+      "brochure_page": 30,
+      "heading_choose": 2,
+      "groups": [
+        {
+          "id": "imit-l1-g1",
+          "choose": 1,
+          "options": [
+            {"id": "intercultural-awareness", "name": "Intercultural Awareness and Cultural Diversity"},
+            {"id": "digital-thinking", "name": "Digital Thinking and Innovation"}
+          ]
+        },
+        {
+          "id": "imit-l1-g2",
+          "choose": 1,
+          "options": [
+            {"id": "intro-oop", "name": "Introduction to Object-Oriented Programming"},
+            {"id": "intro-visual-programming", "name": "Introduction to Visual Programming"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imit-level-2-2026-07",
+      "programme_keys": ["IMIT"],
+      "academic_level": 2,
+      "brochure_page": 30,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "imit-l2-g1",
+          "choose": 1,
+          "options": [
+            {"id": "web-applications", "name": "Web Applications"},
+            {"id": "human-computer-interaction", "name": "Human Computer Interaction"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imit-level-3-2026-07",
+      "programme_keys": ["IMIT"],
+      "academic_level": 3,
+      "brochure_page": 30,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "imit-l3-g1",
+          "choose": 1,
+          "options": [
+            {"id": "mobile-web-multimedia", "name": "Mobile and Web Multimedia"},
+            {"id": "vrar-design-project", "name": "VRAR Design Project"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imit-vrar-level-1-2026-07",
+      "programme_keys": ["IMIT(VRAR)"],
+      "academic_level": 1,
+      "brochure_page": 31,
+      "heading_choose": 2,
+      "groups": [
+        {
+          "id": "imit-vrar-l1-g1",
+          "choose": 1,
+          "options": [
+            {"id": "intercultural-awareness", "name": "Intercultural Awareness and Cultural Diversity"},
+            {"id": "digital-thinking", "name": "Digital Thinking and Innovation"}
+          ]
+        },
+        {
+          "id": "imit-vrar-l1-g2",
+          "choose": 1,
+          "options": [
+            {"id": "intro-oop", "name": "Introduction to Object-Oriented Programming"},
+            {"id": "intro-visual-programming", "name": "Introduction to Visual Programming"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imit-vrar-level-2-2026-07",
+      "programme_keys": ["IMIT(VRAR)"],
+      "academic_level": 2,
+      "brochure_page": 31,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "imit-vrar-l2-g1",
+          "choose": 1,
+          "options": [
+            {"id": "web-applications", "name": "Web Applications"},
+            {"id": "human-computer-interaction", "name": "Human Computer Interaction"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imit-vrar-level-3-2026-07",
+      "programme_keys": ["IMIT(VRAR)"],
+      "academic_level": 3,
+      "brochure_page": 31,
+      "heading_choose": 1,
+      "groups": [
+        {
+          "id": "imit-vrar-l3-g1",
+          "choose": 1,
+          "options": [
+            {"id": "mobile-web-multimedia", "name": "Mobile and Web Multimedia"},
+            {
+              "id": "multimedia-animation-effects",
+              "name": "Multimedia Techniques For Animation, Games & Film Effects",
+              "aliases": ["Multimedia Techniques For Animation, Games and Film Effects"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "game-development-level-3-2026-07",
+      "programme_keys": ["CGD", "CGD(GA)", "CGD(GT)"],
+      "academic_level": 3,
+      "brochure_page": 32,
+      "heading_choose": 2,
+      "groups": [
+        {
+          "id": "cgd-l3-g1",
+          "choose": 2,
+          "options": [
+            {"id": "character-development", "name": "Character Development and Storytelling for Games"},
+            {"id": "game-world-creation", "name": "Game World Creation"},
+            {"id": "game-level-design", "name": "Game Level Design"},
+            {"id": "game-ux-ui", "name": "UX/UI for Games"},
+            {"id": "game-ai", "name": "Artificial Intelligence for Games"},
+            {"id": "mobile-game-development", "name": "Mobile Game Development"}
+          ]
+        }
+      ]
+    }
+  ]
+}

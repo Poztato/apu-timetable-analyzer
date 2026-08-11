@@ -172,6 +172,24 @@ def parse_intake_code(
     if not isinstance(course_details, Mapping):
         course_details = {}
 
+    course_specialisms = course_details.get("specialisms", {})
+    if not isinstance(course_specialisms, Mapping):
+        course_specialisms = {}
+    specialism_details = (
+        course_specialisms.get(specialism_code, {}) if specialism_code else {}
+    )
+    if isinstance(specialism_details, str):
+        specialism_details = {"name": specialism_details}
+    elif not isinstance(specialism_details, Mapping):
+        specialism_details = {}
+
+    specialism_name = None
+    if specialism_code:
+        specialism_name = specialism_details.get("name") or specialisms.get(
+            specialism_code
+        )
+    school = specialism_details.get("school") or course_details.get("school")
+
     return {
         "programme_route": route,
         "programme_route_name": routes.get(route),
@@ -181,10 +199,8 @@ def parse_intake_code(
         "course_code": course_code,
         "course_name": course_details.get("name"),
         "specialism_code": specialism_code,
-        "specialism_name": (
-            specialisms.get(specialism_code) if specialism_code else None
-        ),
-        "school": course_details.get("school"),
+        "specialism_name": specialism_name,
+        "school": school,
         "study_mode": None,
         "parse_status": "parsed",
         "parser_family": "apu_degree",

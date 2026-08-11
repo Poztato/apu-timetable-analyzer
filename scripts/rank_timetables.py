@@ -23,7 +23,12 @@ OUTPUT_FILENAME = "default_rankings.parquet"
 PERCENTILE_METHOD = "strict_lower_peer_v1"
 
 COMPARISON_KEY = ["snapshot_id", "week_start"]
-WEEKLY_KEY = [*COMPARISON_KEY, "intake_code", "grouping"]
+WEEKLY_KEY = [
+    *COMPARISON_KEY,
+    "intake_code",
+    "grouping",
+    "elective_profile",
+]
 
 CRITERION_COLUMNS = {
     "gap_burden": "total_gap_minutes",
@@ -147,6 +152,9 @@ def _validate_weekly_metrics(weekly: pd.DataFrame) -> None:
     required = {
         "variant_id",
         *WEEKLY_KEY,
+        "elective_profile_name",
+        "elective_status",
+        "elective_rule_id",
         *CRITERION_COLUMNS.values(),
     }
     missing = sorted(required.difference(weekly.columns))
@@ -255,7 +263,14 @@ def rank_weekly_metrics(
     for column in ("scoring_profile", "scoring_profile_id", "percentile_method"):
         ranked[column] = ranked[column].astype("string")
     ranked = ranked.sort_values(
-        ["snapshot_id", "week_start", "best_rank", "intake_code", "grouping"],
+        [
+            "snapshot_id",
+            "week_start",
+            "best_rank",
+            "intake_code",
+            "grouping",
+            "elective_profile",
+        ],
         kind="stable",
     ).reset_index(drop=True)
     return ranked
@@ -294,6 +309,8 @@ def _ranking_example(row: pd.Series) -> dict[str, Any]:
     return {
         "intake_code": str(row["intake_code"]),
         "grouping": str(row["grouping"]),
+        "elective_profile_name": str(row["elective_profile_name"]),
+        "elective_status": str(row["elective_status"]),
         "overall_frustration": float(row["overall_frustration"]),
         "total_gap_minutes": int(row["total_gap_minutes"]),
         "late_only_days": int(row["late_only_days"]),
@@ -341,13 +358,13 @@ def rank_snapshot(
         COMPARISON_KEY, sort=True, dropna=False
     ):
         best = comparison.loc[comparison["is_best"]].sort_values(
-            ["intake_code", "grouping"], kind="stable"
+            ["intake_code", "grouping", "elective_profile"], kind="stable"
         )
         worst = comparison.loc[comparison["is_worst"]].sort_values(
-            ["intake_code", "grouping"], kind="stable"
+            ["intake_code", "grouping", "elective_profile"], kind="stable"
         )
         average = comparison.loc[comparison["is_most_average"]].sort_values(
-            ["intake_code", "grouping"], kind="stable"
+            ["intake_code", "grouping", "elective_profile"], kind="stable"
         )
         comparison_summaries.append(
             {

@@ -1,4 +1,4 @@
-"""Aggregate daily timetable measures into weekly intake-group records."""
+"""Aggregate daily timetable measures into weekly schedule variants."""
 
 from __future__ import annotations
 
@@ -18,7 +18,13 @@ PROCESSED_DIRECTORY_RELATIVE_PATH = Path("data/processed")
 INPUT_FILENAME = "daily_metrics.parquet"
 OUTPUT_FILENAME = "intake_week_metrics.parquet"
 
-WEEKLY_KEY = ["snapshot_id", "week_start", "intake_code", "grouping"]
+WEEKLY_KEY = [
+    "snapshot_id",
+    "week_start",
+    "intake_code",
+    "grouping",
+    "elective_profile",
+]
 DAILY_KEY = [*WEEKLY_KEY, "event_date"]
 
 METADATA_COLUMNS = [
@@ -40,6 +46,9 @@ METADATA_COLUMNS = [
 REQUIRED_COLUMNS = {
     "variant_id",
     *DAILY_KEY,
+    "elective_profile_name",
+    "elective_status",
+    "elective_rule_id",
     "is_weekend",
     "event_record_count",
     "event_count",
@@ -67,6 +76,10 @@ OUTPUT_COLUMNS = [
     "week_start",
     "intake_code",
     "grouping",
+    "elective_profile",
+    "elective_profile_name",
+    "elective_status",
+    "elective_rule_id",
     "active_days",
     "campus_days",
     "online_only_days",
@@ -247,6 +260,10 @@ def _aggregate_week(week: pd.DataFrame) -> dict[str, Any]:
         "week_start": week["week_start"].iloc[0],
         "intake_code": week["intake_code"].iloc[0],
         "grouping": week["grouping"].iloc[0],
+        "elective_profile": week["elective_profile"].iloc[0],
+        "elective_profile_name": week["elective_profile_name"].iloc[0],
+        "elective_status": week["elective_status"].iloc[0],
+        "elective_rule_id": week["elective_rule_id"].iloc[0],
         "active_days": len(week),
         "campus_days": int((week["campus_event_count"] > 0).sum()),
         "online_only_days": int(
@@ -334,6 +351,10 @@ def calculate_weekly_metrics(daily_metrics: pd.DataFrame) -> pd.DataFrame:
         "snapshot_id",
         "intake_code",
         "grouping",
+        "elective_profile",
+        "elective_profile_name",
+        "elective_status",
+        "elective_rule_id",
         "earliest_start",
         "latest_end",
         *[
@@ -346,7 +367,14 @@ def calculate_weekly_metrics(daily_metrics: pd.DataFrame) -> pd.DataFrame:
         weekly[column] = weekly[column].astype("string")
 
     weekly = weekly.sort_values(
-        ["snapshot_id", "week_start", "intake_code", "grouping"], kind="stable"
+        [
+            "snapshot_id",
+            "week_start",
+            "intake_code",
+            "grouping",
+            "elective_profile",
+        ],
+        kind="stable",
     ).reset_index(drop=True)
     if weekly.duplicated(WEEKLY_KEY).any():
         raise WeeklyMetricError("Weekly metric keys are not unique.")

@@ -29,7 +29,7 @@ from scripts.rank_timetables import (
 )
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 CALENDAR_TIMEZONE = "Asia/Kuala_Lumpur"
 
 INDEX_RELATIVE_PATH = Path("data/snapshots/index.json")
@@ -146,6 +146,9 @@ BLOCK_SOURCE_COLUMNS = [
     "delivery_mode",
     "source_grouping",
     "is_common_event",
+    "is_elective",
+    "elective_group_id",
+    "elective_option_id",
     "is_shared_slot",
     "shared_group_count",
     "color",
@@ -164,6 +167,9 @@ BLOCK_EXPORT_COLUMNS = [
     "delivery_mode",
     "source_grouping",
     "is_common_event",
+    "is_elective",
+    "elective_group_id",
+    "elective_option_id",
     "is_shared_slot",
     "shared_group_count",
     "color",
@@ -359,6 +365,10 @@ def _validate_weekly_and_rankings(
         "week_start",
         "intake_code",
         "grouping",
+        "elective_profile",
+        "elective_profile_name",
+        "elective_status",
+        "elective_rule_id",
         *WEEKLY_METRIC_COLUMNS,
         *INTAKE_METADATA_COLUMNS,
     }
@@ -368,6 +378,10 @@ def _validate_weekly_and_rankings(
         "week_start",
         "intake_code",
         "grouping",
+        "elective_profile",
+        "elective_profile_name",
+        "elective_status",
+        "elective_rule_id",
         *CRITERION_COLUMNS.values(),
         *RANKING_RESULT_COLUMNS,
         "scoring_profile",
@@ -379,7 +393,13 @@ def _validate_weekly_and_rankings(
     _validate_snapshot_frame(weekly, snapshot_id, "Weekly metrics")
     _validate_snapshot_frame(rankings, snapshot_id, "Default rankings")
 
-    weekly_key = ["snapshot_id", "week_start", "intake_code", "grouping"]
+    weekly_key = [
+        "snapshot_id",
+        "week_start",
+        "intake_code",
+        "grouping",
+        "elective_profile",
+    ]
     if weekly["variant_id"].isna().any() or weekly["variant_id"].duplicated().any():
         raise DashboardDataError("Weekly metrics has invalid variant IDs.")
     if weekly.duplicated(weekly_key).any():
@@ -400,6 +420,10 @@ def _validate_weekly_and_rankings(
         "week_start",
         "intake_code",
         "grouping",
+        "elective_profile",
+        "elective_profile_name",
+        "elective_status",
+        "elective_rule_id",
         *CRITERION_COLUMNS.values(),
     ]:
         if _series_mapping(weekly, column) != _series_mapping(rankings, column):
@@ -615,7 +639,8 @@ def _build_compact_snapshot(
     _validate_weekly_and_rankings(weekly, rankings, snapshot_id, profile)
 
     weekly = weekly.sort_values(
-        ["week_start", "intake_code", "grouping"], kind="stable"
+        ["week_start", "intake_code", "grouping", "elective_profile"],
+        kind="stable",
     ).reset_index(drop=True)
     variant_indices = {
         str(variant_id): position
@@ -625,7 +650,16 @@ def _build_compact_snapshot(
     ranking_rows = ranking_by_variant.loc[list(weekly["variant_id"])]
 
     weekly_export = weekly[
-        ["week_start", "intake_code", "grouping", *WEEKLY_METRIC_COLUMNS]
+        [
+            "week_start",
+            "intake_code",
+            "grouping",
+            "elective_profile",
+            "elective_profile_name",
+            "elective_status",
+            "elective_rule_id",
+            *WEEKLY_METRIC_COLUMNS,
+        ]
     ].copy()
     for column in RANKING_RESULT_COLUMNS:
         weekly_export[column] = ranking_rows[column].to_numpy()
