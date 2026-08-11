@@ -21,6 +21,10 @@ function loadRealDashboardData() {
   );
 }
 
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-MY").format(value);
+}
+
 describe("Dashboard MVP", () => {
   it("reproduces every exported default ranking across all weeks", () => {
     const data = loadRealDashboardData();
@@ -59,7 +63,9 @@ describe("Dashboard MVP", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        new RegExp(`${defaultPeerCount} variants in the current comparison set`),
+        new RegExp(
+          `${formatNumber(defaultPeerCount)} variants in the current comparison set`,
+        ),
       ),
     ).toBeTruthy();
     expect(screen.getAllByText("AFCF2507ICT (G1)").length).toBeGreaterThan(0);
@@ -71,7 +77,9 @@ describe("Dashboard MVP", () => {
     });
     expect(matchingRow.textContent).toContain("APD3F2605CS(DA)");
     expect(
-      screen.getByText(new RegExp(`Scores use ${defaultPeerCount} peers`)),
+      screen.getByText(
+        new RegExp(`Scores use ${formatNumber(defaultPeerCount)} peers`),
+      ),
     ).toBeTruthy();
 
     await user.click(screen.getByLabelText("Move Gap burden down"));
@@ -124,7 +132,9 @@ describe("Dashboard MVP", () => {
     );
     expect(
       await screen.findByText(
-        new RegExp(`${expectedFoundationPeers} variants in the current comparison set`),
+        new RegExp(
+          `${formatNumber(expectedFoundationPeers)} variants in the current comparison set`,
+        ),
       ),
     ).toBeTruthy();
     await user.selectOptions(screen.getByLabelText("Programme level"), "");
@@ -132,7 +142,9 @@ describe("Dashboard MVP", () => {
     await user.selectOptions(screen.getByLabelText("Course"), "CS");
     expect(
       await screen.findByText(
-        new RegExp(`${expectedCoursePeers} variants in the current comparison set`),
+        new RegExp(
+          `${formatNumber(expectedCoursePeers)} variants in the current comparison set`,
+        ),
       ),
     ).toBeTruthy();
   });
