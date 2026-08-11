@@ -1,10 +1,8 @@
 {
   "schema_version": 2,
   "source": {
-    "title": "APU Computing, Technology, Software Engineering, Data Science, AI, Cyber Security, Game Development and VR/AR brochure",
-    "edition": "July 2026",
-    "local_path": "OneDrive_2026-08-10/e2026July_Computing.pdf",
-    "sha256": "9687dcdfa70ce69d6a6e4fc8e36c79df1b60e3c4d23a323f265cc2713b7f649e",
+    "title": "APU programme brochures",
+    "registry_path": "config/elective_rules.json",
     "extraction_method": "Embedded PDF text, no OCR"
   },
   "programme_routes": {
@@ -21,8 +19,56 @@
     "other": "Other or unclassified"
   },
   "courses": {
+    "ACC": {
+      "name": "Accounting"
+    },
+    "ACS": {
+      "name": "Actuarial Science"
+    },
+    "AF": {
+      "name": "Accounting and Finance"
+    },
+    "AFA": {
+      "name": "Accounting in Forensic Analysis"
+    },
+    "AI": {
+      "name": "Artificial Intelligence"
+    },
+    "ANM": {
+      "name": "Animation"
+    },
+    "ARC": {
+      "name": "Architecture"
+    },
+    "AS": {
+      "name": "Administrative Skills"
+    },
+    "BA": {
+      "name": "Business Administration"
+    },
+    "BAF": {
+      "name": "Banking and Finance"
+    },
+    "BF": {
+      "name": "Business and Finance"
+    },
+    "BFT": {
+      "name": "Financial Technology"
+    },
+    "BIT": {
+      "name": "Business Information Technology"
+    },
+    "BM": {
+      "name": "Business Management"
+    },
+    "BSA": {
+      "name": "Business Administration"
+    },
+    "CE": {
+      "name": "Computer Engineering"
+    },
     "CGD": {
-      "name": "Game Development",
+      "name": "Computer Games Development",
       "school": "School of Game Development and Extended Reality",
       "specialisms": {
         "GA": {
@@ -65,15 +111,93 @@
         }
       }
     },
+    "CT": {
+      "name": "Computing and Technology"
+    },
+    "CTODL": {
+      "name": "Computing (Open and Distance Learning)"
+    },
+    "CYS": {
+      "name": "Cyber Security"
+    },
+    "DA": {
+      "name": "Digital Advertising"
+    },
+    "DBA": {
+      "name": "Doctor of Business Administration"
+    },
+    "DC": {
+      "name": "Digital Communication"
+    },
+    "DIM": {
+      "name": "Design Innovation Management"
+    },
+    "DM": {
+      "name": "Digital Marketing"
+    },
+    "DS": {
+      "name": "Design"
+    },
+    "DSBA": {
+      "name": "Data Science and Business Analytics"
+    },
+    "DSM": {
+      "name": "Design and Media"
+    },
+    "DT": {
+      "name": "Digital Transformation"
+    },
+    "EEE": {
+      "name": "Electrical and Electronic Engineering"
+    },
+    "EMT": {
+      "name": "Events Management"
+    },
+    "ENG": {
+      "name": "Engineering"
+    },
+    "FIN": {
+      "name": "Finance"
+    },
+    "FNT": {
+      "name": "Financial Technology"
+    },
+    "HMT": {
+      "name": "Hotel Management"
+    },
+    "HPT": {
+      "name": "Hospitality and Tourism"
+    },
+    "HRM": {
+      "name": "Human Resource Management"
+    },
+    "IBC": {
+      "name": "International Business Communications"
+    },
+    "IBM": {
+      "name": "International Business Management"
+    },
+    "ICT": {
+      "name": "Information and Communication Technology"
+    },
+    "ID": {
+      "name": "Industrial Design"
+    },
     "IMIT": {
       "name": "Interactive Media and Immersive Technology",
       "school": "School of Game Development and Extended Reality",
       "specialisms": {
         "VRAR": {
-          "name": "VR/AR",
+          "name": "Virtual and Augmented Reality",
           "school": "School of Game Development and Extended Reality"
         }
       }
+    },
+    "IR": {
+      "name": "International Relations"
+    },
+    "IRS": {
+      "name": "International Studies"
     },
     "IT": {
       "name": "Information Technology",
@@ -105,26 +229,91 @@
         }
       }
     },
+    "ITM": {
+      "name": "Information Technology Management"
+    },
+    "LDT": {
+      "name": "Learning Design and Technology"
+    },
+    "MBA": {
+      "name": "Master of Business Administration"
+    },
+    "MCH": {
+      "name": "Mechanical Engineering"
+    },
+    "MCS": {
+      "name": "Media and Communication Studies"
+    },
+    "ME": {
+      "name": "Mechatronic Engineering"
+    },
+    "MKT": {
+      "name": "Marketing Management"
+    },
+    "PE": {
+      "name": "Petroleum Engineering"
+    },
+    "PM": {
+      "name": "Project Management"
+    },
+    "PSY": {
+      "name": "Psychology"
+    },
     "SE": {
       "name": "Software Engineering",
       "school": "School of Software Engineering"
+    },
+    "TE": {
+      "name": "Telecommunication Engineering"
+    },
+    "TM": {
+      "name": "Technology Management"
+    },
+    "TRM": {
+      "name": "Tourism Management"
+    },
+    "VFX": {
+      "name": "Visual Effects"
     }
   },
   "specialisms": {
     "AI": "Artificial Intelligence",
+    "ANM": "Animation",
+    "AT": "Accounting Technology",
+    "BA": "Business Analytics",
+    "BI": "Business Intelligence",
     "BIS": "Business Information Systems",
     "CE": "Cloud Engineering",
     "CYB": "Cyber Security",
     "CYBDF": "Cyber Security with Digital Forensics",
     "DA": "Data Analytics",
+    "DE": "Data Engineering",
     "DF": "Digital Forensics",
+    "DI": "Data Informatics",
+    "DL": "Digital Leadership",
+    "DM": "Digital Marketing",
+    "DT": "Digital Transformation",
+    "E-BUS": "E-Business",
+    "FA": "Forensic Accounting",
+    "FI": "Forex and Investments",
+    "FINT": "Financial Technology",
     "FT": "Financial Technology",
     "GA": "Game Art",
     "GT": "Game Technology",
+    "HSP": "Hospitality",
+    "HT": "Hospitality and Tourism",
+    "IA": "Investment Analytics",
+    "ID": "Industrial Design",
     "IOT": "Internet of Things",
     "ISS": "Information System Security",
+    "ITR": "Interactive Technology",
+    "MCS": "Media and Communication Studies",
+    "OGM": "Oil and Gas Management",
     "QC": "Quantum Computing",
     "SC": "Sustainable Computing",
-    "VRAR": "VR/AR"
+    "SCM": "Supply Chain Management",
+    "SE": "Software Engineering",
+    "VFX": "Visual Effects",
+    "VRAR": "Virtual and Augmented Reality"
   }
 }
