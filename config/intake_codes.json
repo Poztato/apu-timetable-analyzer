@@ -1,15 +1,121 @@
 {
+  "schema_version": 2,
+  "source": {
+    "title": "APU Computing, Technology, Software Engineering, Data Science, AI, Cyber Security, Game Development and VR/AR brochure",
+    "edition": "July 2026",
+    "local_path": "OneDrive_2026-08-10/e2026July_Computing.pdf",
+    "sha256": "9687dcdfa70ce69d6a6e4fc8e36c79df1b60e3c4d23a323f265cc2713b7f649e",
+    "extraction_method": "Embedded PDF text, no OCR"
+  },
   "programme_routes": {
     "APD": "Dual-degree programme",
     "APU": "APU programme"
   },
   "courses": {
+    "CGD": {
+      "name": "Game Development",
+      "school": "School of Game Development and Extended Reality",
+      "specialisms": {
+        "GA": {
+          "name": "Game Art",
+          "school": "School of Game Development and Extended Reality"
+        },
+        "GT": {
+          "name": "Game Technology",
+          "school": "School of Game Development and Extended Reality"
+        }
+      }
+    },
     "CS": {
       "name": "Computer Science",
-      "school": null
+      "school": "School of Computer Science and Quantum Computing",
+      "specialisms": {
+        "AI": {
+          "name": "Artificial Intelligence",
+          "school": "School of Artificial Intelligence and Data Science"
+        },
+        "CYB": {
+          "name": "Cyber Security",
+          "school": "School of Cybersecurity and Forensics"
+        },
+        "CYBDF": {
+          "name": "Cyber Security with Digital Forensics",
+          "school": "School of Cybersecurity and Forensics"
+        },
+        "DA": {
+          "name": "Data Analytics",
+          "school": "School of Artificial Intelligence and Data Science"
+        },
+        "DF": {
+          "name": "Digital Forensics",
+          "school": "School of Cybersecurity and Forensics"
+        },
+        "QC": {
+          "name": "Quantum Computing",
+          "school": "School of Computer Science and Quantum Computing"
+        }
+      }
+    },
+    "IMIT": {
+      "name": "Interactive Media and Immersive Technology",
+      "school": "School of Game Development and Extended Reality",
+      "specialisms": {
+        "VRAR": {
+          "name": "VR/AR",
+          "school": "School of Game Development and Extended Reality"
+        }
+      }
+    },
+    "IT": {
+      "name": "Information Technology",
+      "school": "School of Digital Innovation and Technology",
+      "specialisms": {
+        "BIS": {
+          "name": "Business Information Systems",
+          "school": "School of Digital Innovation and Technology"
+        },
+        "CE": {
+          "name": "Cloud Engineering",
+          "school": "School of Digital Innovation and Technology"
+        },
+        "FT": {
+          "name": "Financial Technology",
+          "school": "School of Digital Innovation and Technology"
+        },
+        "IOT": {
+          "name": "Internet of Things",
+          "school": "School of Digital Innovation and Technology"
+        },
+        "ISS": {
+          "name": "Information System Security",
+          "school": "School of Digital Innovation and Technology"
+        },
+        "SC": {
+          "name": "Sustainable Computing",
+          "school": "School of Digital Innovation and Technology"
+        }
+      }
+    },
+    "SE": {
+      "name": "Software Engineering",
+      "school": "School of Software Engineering"
     }
   },
   "specialisms": {
-    "DA": "Data Analytics"
+    "AI": "Artificial Intelligence",
+    "BIS": "Business Information Systems",
+    "CE": "Cloud Engineering",
+    "CYB": "Cyber Security",
+    "CYBDF": "Cyber Security with Digital Forensics",
+    "DA": "Data Analytics",
+    "DF": "Digital Forensics",
+    "FT": "Financial Technology",
+    "GA": "Game Art",
+    "GT": "Game Technology",
+    "IOT": "Internet of Things",
+    "ISS": "Information System Security",
+    "QC": "Quantum Computing",
+    "SC": "Sustainable Computing",
+    "VRAR": "VR/AR"
   }
 }
