@@ -71,6 +71,7 @@ export interface RankedVariant extends WeeklyMetric {
 export interface FilterState {
   weekStart: string;
   grouping: string;
+  programmeLevel: string;
   programmeRoute: string;
   academicLevel: string;
   courseCode: string;
@@ -239,6 +240,12 @@ export function filterWeeklyMetrics(
 
     const intake = intakeByCode.get(row.intake_code);
     if (!intake) return false;
+    if (
+      filters.programmeLevel &&
+      intake.programme_level !== filters.programmeLevel
+    ) {
+      return false;
+    }
     if (
       filters.programmeRoute &&
       intake.programme_route !== filters.programmeRoute

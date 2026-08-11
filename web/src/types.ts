@@ -40,6 +40,7 @@ export interface CodeNameOption {
 }
 
 export interface FilterOptions {
+  programme_levels: CodeNameOption[];
   programme_routes: CodeNameOption[];
   academic_levels: number[];
   intake_years: number[];
@@ -80,6 +81,8 @@ export interface IntakeMetadata {
   intake_code: string;
   programme_route: string | null;
   programme_route_name: string | null;
+  programme_level: string;
+  programme_level_name: string;
   academic_level: number | null;
   intake_year: number | null;
   intake_month: number | null;

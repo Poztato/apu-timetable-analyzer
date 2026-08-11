@@ -91,6 +91,7 @@ describe("Dashboard MVP", () => {
       {
         weekStart: "2026-08-10",
         grouping: "",
+        programmeLevel: "",
         programmeRoute: "",
         academicLevel: "",
         courseCode: "CS",
@@ -100,6 +101,34 @@ describe("Dashboard MVP", () => {
         deliveryMode: "",
       },
     ).length;
+
+    const expectedFoundationPeers = filterWeeklyMetrics(
+      data.weeklyMetrics,
+      intakeByCode,
+      {
+        weekStart: "2026-08-10",
+        grouping: "",
+        programmeLevel: "foundation",
+        programmeRoute: "",
+        academicLevel: "",
+        courseCode: "",
+        specialismCode: "",
+        school: "",
+        studyMode: "",
+        deliveryMode: "",
+      },
+    ).length;
+    await user.selectOptions(
+      screen.getByLabelText("Programme level"),
+      "foundation",
+    );
+    expect(
+      await screen.findByText(
+        new RegExp(`${expectedFoundationPeers} variants in the current comparison set`),
+      ),
+    ).toBeTruthy();
+    await user.selectOptions(screen.getByLabelText("Programme level"), "");
+
     await user.selectOptions(screen.getByLabelText("Course"), "CS");
     expect(
       await screen.findByText(

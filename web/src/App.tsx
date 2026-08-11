@@ -507,6 +507,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
   const [filters, setFilters] = useState<FilterState>({
     weekStart: defaultWeek,
     grouping: "",
+    programmeLevel: "",
     programmeRoute: "",
     academicLevel: "",
     courseCode: "",
@@ -617,6 +618,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
     setFilters({
       weekStart: filters.weekStart,
       grouping: "",
+      programmeLevel: "",
       programmeRoute: "",
       academicLevel: "",
       courseCode: "",
@@ -715,6 +717,16 @@ export function Dashboard({ data }: { data: DashboardData }) {
               onChange={(value) => updateFilter("grouping", value)}
             />
             <SelectField
+              label="Programme level"
+              value={filters.programmeLevel}
+              options={data.filters.programme_levels.map((option) => ({
+                value: option.code,
+                label: optionLabel(option),
+              }))}
+              allLabel="All programme levels"
+              onChange={(value) => updateFilter("programmeLevel", value)}
+            />
+            <SelectField
               label="Programme route"
               value={filters.programmeRoute}
               options={data.filters.programme_routes.map((option) => ({
@@ -725,13 +737,13 @@ export function Dashboard({ data }: { data: DashboardData }) {
               onChange={(value) => updateFilter("programmeRoute", value)}
             />
             <SelectField
-              label="Academic level"
+              label="Degree level"
               value={filters.academicLevel}
               options={data.filters.academic_levels.map((value) => ({
                 value: String(value),
                 label: `Level ${value}`,
               }))}
-              allLabel="All levels"
+              allLabel="All degree levels"
               onChange={(value) => updateFilter("academicLevel", value)}
             />
             <SelectField
@@ -963,7 +975,8 @@ export function Dashboard({ data }: { data: DashboardData }) {
             <dl className="metadata-list">
               <div><dt>Course</dt><dd>{selectedIntake?.course_name ?? selectedIntake?.course_code ?? "Unknown"}</dd></div>
               <div><dt>Specialism</dt><dd>{selectedIntake?.specialism_name ?? selectedIntake?.specialism_code ?? "None identified"}</dd></div>
-              <div><dt>Level</dt><dd>{selectedIntake?.academic_level ?? "Unknown"}</dd></div>
+              <div><dt>Programme level</dt><dd>{selectedIntake?.programme_level_name ?? "Unknown"}</dd></div>
+              <div><dt>Degree level</dt><dd>{selectedIntake?.academic_level ?? "Not applicable"}</dd></div>
               <div><dt>Route</dt><dd>{selectedIntake?.programme_route_name ?? selectedIntake?.programme_route ?? "Unknown"}</dd></div>
               <div><dt>Electives</dt><dd>{selected.elective_profile_name}</dd></div>
               <div><dt>Elective status</dt><dd>{selected.elective_status.replaceAll("_", " ")}</dd></div>

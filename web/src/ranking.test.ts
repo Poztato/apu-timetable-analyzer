@@ -66,6 +66,8 @@ function intake(code: string, course: string): IntakeMetadata {
     intake_code: code,
     programme_route: "APU",
     programme_route_name: "APU programme",
+    programme_level: "degree",
+    programme_level_name: "Degree",
     academic_level: 1,
     intake_year: 2026,
     intake_month: 5,
@@ -134,6 +136,7 @@ describe("filterWeeklyMetrics", () => {
     const filters: FilterState = {
       weekStart: "2026-08-10",
       grouping: "",
+      programmeLevel: "",
       programmeRoute: "",
       academicLevel: "",
       courseCode: "CS",

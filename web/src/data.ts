@@ -36,7 +36,7 @@ function validatePayload(value: unknown): RawDashboardPayload {
   if (!isRecord(value)) {
     throw new Error("The dashboard data is not a JSON object.");
   }
-  if (value.schema_version !== 2) {
+  if (value.schema_version !== 3) {
     throw new Error(`Unsupported dashboard schema: ${String(value.schema_version)}.`);
   }
   if (value.dataset_kind !== "latest_snapshot") {
