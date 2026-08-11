@@ -17,6 +17,7 @@ def rule_config(*, minimum_year_month: int = 202607) -> dict[str, object]:
     return {
         "schema_version": 1,
         "source": {"edition": "Test", "sha256": "abc"},
+        "programme_level": "degree",
         "applicability": {
             "minimum_intake_year_month": minimum_year_month,
             "verified_legacy_intakes": [],
@@ -60,6 +61,7 @@ def events_for(*module_names: str, intake_month: int = 7) -> pd.DataFrame:
             {
                 "snapshot_id": "snapshot-one",
                 "intake_code": f"APD3F26{intake_month:02d}SE",
+                "programme_level": "degree",
                 "course_code": "SE",
                 "specialism_code": pd.NA,
                 "academic_level": 3,

@@ -80,6 +80,8 @@ def daily_record(
         "overloaded_flag": overloaded,
         "programme_route": "APD",
         "programme_route_name": "Dual-degree programme",
+        "programme_level": "degree",
+        "programme_level_name": "Degree",
         "academic_level": 3,
         "intake_year": 2026,
         "intake_month": 5,

@@ -80,6 +80,8 @@ def weekly_record(
         "maximum_daily_teaching_minutes": 60,
         "programme_route": "APD",
         "programme_route_name": "APU dual degree",
+        "programme_level": "degree",
+        "programme_level_name": "Degree",
         "academic_level": 3,
         "intake_year": 2026,
         "intake_month": 5,
@@ -296,11 +298,16 @@ class BuildDashboardDataTests(unittest.TestCase):
                 "history/snapshot-one.json",
             )
             self.assertEqual(latest["dataset_kind"], "latest_snapshot")
+            self.assertEqual(latest["schema_version"], 3)
             self.assertEqual(latest["table_encoding"], "columns_and_rows")
             self.assertEqual(history["dataset_kind"], "snapshot_metrics")
             self.assertNotIn("daily_metrics", history)
             self.assertNotIn("timetable_blocks", history)
             self.assertEqual(latest["intakes"][0]["groupings"], ["G1", "G2"])
+            self.assertEqual(
+                latest["filters"]["programme_levels"],
+                [{"code": "degree", "name": "Degree"}],
+            )
             weekly_metrics = table_records(latest["weekly_metrics"])
             daily_metrics = table_records(latest["daily_metrics"])
             self.assertEqual(

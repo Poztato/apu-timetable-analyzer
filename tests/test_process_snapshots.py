@@ -25,6 +25,15 @@ INTAKE_CONFIG = {
         "APD": "Dual-degree programme",
         "APU": "APU programme",
     },
+    "programme_levels": {
+        "certificate": "Certificate",
+        "diploma": "Diploma",
+        "foundation": "Foundation",
+        "degree": "Degree",
+        "masters": "Master's",
+        "doctorate": "Doctorate",
+        "other": "Other or unclassified",
+    },
     "courses": {"CS": {"name": "Computer Science", "school": None}},
     "specialisms": {"DA": "Data Analytics"},
 }
@@ -35,6 +44,8 @@ class IntakeParsingTests(unittest.TestCase):
         parsed = parse_intake_code("APD3F2605CS(DA)", INTAKE_CONFIG)
 
         self.assertEqual(parsed["programme_route"], "APD")
+        self.assertEqual(parsed["programme_level"], "degree")
+        self.assertEqual(parsed["programme_level_name"], "Degree")
         self.assertEqual(parsed["academic_level"], 3)
         self.assertEqual(parsed["intake_year"], 2026)
         self.assertEqual(parsed["intake_month"], 5)
@@ -44,12 +55,38 @@ class IntakeParsingTests(unittest.TestCase):
         self.assertEqual(parsed["specialism_name"], "Data Analytics")
         self.assertEqual(parsed["parse_status"], "parsed")
 
-    def test_leaves_unknown_format_unparsed(self) -> None:
-        parsed = parse_intake_code("APDMF2508MBA(BA)(PR)", INTAKE_CONFIG)
+    def test_parses_supported_non_degree_programme_families(self) -> None:
+        examples = {
+            "APDMF2508CYS": ("masters", "Master's", "CYS", None),
+            "APDMF2508MBA(BA)(PR)": ("masters", "Master's", "MBA", "BA"),
+            "UCFF2603CT": ("foundation", "Foundation", "CT", None),
+            "UCDF2411ICT(DI)": ("diploma", "Diploma", "ICT", "DI"),
+            "UCD2F2602ME": ("diploma", "Diploma", "ME", None),
+            "AFCF2507ICT": ("certificate", "Certificate", "ICT", None),
+            "APUPF2604DBA": ("doctorate", "Doctorate", "DBA", None),
+        }
 
-        self.assertEqual(parsed["parse_status"], "unparsed")
-        self.assertIsNone(parsed["programme_route"])
-        self.assertIsNone(parsed["course_code"])
+        for intake_code, expected in examples.items():
+            with self.subTest(intake_code=intake_code):
+                parsed = parse_intake_code(intake_code, INTAKE_CONFIG)
+                level, level_name, course, specialism = expected
+                self.assertEqual(parsed["parse_status"], "parsed")
+                self.assertEqual(parsed["programme_level"], level)
+                self.assertEqual(parsed["programme_level_name"], level_name)
+                self.assertEqual(parsed["course_code"], course)
+                self.assertEqual(parsed["specialism_code"], specialism)
+
+    def test_leaves_unknown_format_unparsed_and_filterable(self) -> None:
+        for intake_code in ("APUF2608FM", "APUMP2606", "APUPP2606"):
+            with self.subTest(intake_code=intake_code):
+                parsed = parse_intake_code(intake_code, INTAKE_CONFIG)
+                self.assertEqual(parsed["parse_status"], "unparsed")
+                self.assertIsNone(parsed["programme_route"])
+                self.assertIsNone(parsed["course_code"])
+                self.assertEqual(parsed["programme_level"], "other")
+                self.assertEqual(
+                    parsed["programme_level_name"], "Other or unclassified"
+                )
 
     def test_parses_hyphenated_specialism_code(self) -> None:
         parsed = parse_intake_code("APD2F2602BM(E-BUS)", INTAKE_CONFIG)
