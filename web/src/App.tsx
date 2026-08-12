@@ -136,21 +136,43 @@ function groupByVariant<T extends { variant_index: number }>(
   return grouped;
 }
 
-function scheduleBlocksWithGaps(
+export function scheduleBlocksWithGaps(
   blocks: TimetableBlock[],
 ): ScheduleBlockWithGap[] {
   const sorted = [...blocks].sort(
     (left, right) => Date.parse(left.start_at) - Date.parse(right.start_at),
   );
+  const campusBlocks = sorted.filter(
+    (block) => block.delivery_mode === "campus",
+  );
+  if (campusBlocks.length < 2) {
+    return sorted.map((block) => ({ block, gapBefore: 0 }));
+  }
+
+  const campusWindowStart = Math.min(
+    ...campusBlocks.map((block) => Date.parse(block.start_at)),
+  );
+  const campusWindowEnd = Math.max(
+    ...campusBlocks.map((block) => Date.parse(block.end_at)),
+  );
   let occupiedUntil: number | null = null;
   return sorted.map((block) => {
     const start = Date.parse(block.start_at);
     const end = Date.parse(block.end_at);
+    if (end <= campusWindowStart || start >= campusWindowEnd) {
+      return { block, gapBefore: 0 };
+    }
+
+    const boundedStart = Math.max(start, campusWindowStart);
+    const boundedEnd = Math.min(end, campusWindowEnd);
     const gapBefore =
-      occupiedUntil === null || start <= occupiedUntil
+      occupiedUntil === null || boundedStart <= occupiedUntil
         ? 0
-        : Math.round((start - occupiedUntil) / 60_000);
-    occupiedUntil = occupiedUntil === null ? end : Math.max(occupiedUntil, end);
+        : Math.round((boundedStart - occupiedUntil) / 60_000);
+    occupiedUntil =
+      occupiedUntil === null
+        ? boundedEnd
+        : Math.max(occupiedUntil, boundedEnd);
     return { block, gapBefore };
   });
 }

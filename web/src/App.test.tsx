@@ -8,9 +8,10 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Dashboard } from "./App";
+import { Dashboard, scheduleBlocksWithGaps } from "./App";
 import { parseDashboardData } from "./data";
 import { filterWeeklyMetrics, rankVariants } from "./ranking";
+import type { TimetableBlock } from "./types";
 
 afterEach(cleanup);
 
@@ -24,6 +25,93 @@ function loadRealDashboardData() {
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-MY").format(value);
 }
+
+function timetableBlock(
+  moduleId: string,
+  startAt: string,
+  endAt: string,
+  deliveryMode: TimetableBlock["delivery_mode"],
+): TimetableBlock {
+  return {
+    variant_index: 0,
+    event_date: startAt.slice(0, 10),
+    start_at: startAt,
+    end_at: endAt,
+    duration_minutes: Math.round(
+      (Date.parse(endAt) - Date.parse(startAt)) / 60_000,
+    ),
+    module_id: moduleId,
+    module_name: moduleId,
+    class_code: null,
+    location: null,
+    room: null,
+    delivery_mode: deliveryMode,
+    source_grouping: "G1",
+    is_common_event: false,
+    is_elective: false,
+    elective_group_id: null,
+    elective_option_id: null,
+    is_shared_slot: false,
+    shared_group_count: 1,
+    color: null,
+  };
+}
+
+describe("Campus-bound gap markers", () => {
+  it("does not show a gap before an online class after the last campus class", () => {
+    const blocks = [
+      timetableBlock(
+        "CAMPUS-MORNING",
+        "2026-08-11T11:15:00+08:00",
+        "2026-08-11T12:45:00+08:00",
+        "campus",
+      ),
+      timetableBlock(
+        "CAMPUS-AFTERNOON",
+        "2026-08-11T14:00:00+08:00",
+        "2026-08-11T15:00:00+08:00",
+        "campus",
+      ),
+      timetableBlock(
+        "ONLINE",
+        "2026-08-11T18:45:00+08:00",
+        "2026-08-11T20:45:00+08:00",
+        "online",
+      ),
+    ];
+
+    expect(scheduleBlocksWithGaps(blocks).map((item) => item.gapBefore)).toEqual([
+      0, 75, 0,
+    ]);
+  });
+
+  it("keeps an online class occupied between two campus classes", () => {
+    const blocks = [
+      timetableBlock(
+        "CAMPUS-MORNING",
+        "2026-08-11T09:00:00+08:00",
+        "2026-08-11T10:00:00+08:00",
+        "campus",
+      ),
+      timetableBlock(
+        "ONLINE-MIDDAY",
+        "2026-08-11T12:00:00+08:00",
+        "2026-08-11T13:00:00+08:00",
+        "online",
+      ),
+      timetableBlock(
+        "CAMPUS-AFTERNOON",
+        "2026-08-11T15:00:00+08:00",
+        "2026-08-11T16:00:00+08:00",
+        "campus",
+      ),
+    ];
+
+    expect(scheduleBlocksWithGaps(blocks).map((item) => item.gapBefore)).toEqual([
+      0, 120, 120,
+    ]);
+  });
+});
 
 describe("Dashboard MVP", () => {
   it("reproduces every exported default ranking across all weeks", () => {
