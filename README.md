@@ -31,17 +31,17 @@ The dashboard currently allows users to:
 
 | Measurement                  | Meaning                                                                                                                                                                           |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gap burden**               | The total idle time between occupied class blocks during the week. For example, a class from 8:30 AM to 9:30 AM followed by one from 5:00 PM to 6:00 PM creates a 450-minute gap. |
+| **Gap burden**               | The total idle time between class blocks while the day is bounded by physical campus classes. Online classes before the first or after the last campus class do not create gaps. Online classes between campus classes remain occupied time. |
 | **Late-only campus day**     | A day with exactly one campus class slot, where that slot starts at or after 3:00 PM.                                                                                             |
 | **Early-only campus day**    | A day with exactly one campus class slot, where that slot starts at or before 9:30 AM.                                                                                            |
 | **One-hour-only campus day** | A day that requires campus attendance but contains no more than 60 minutes of campus teaching.                                                                                    |
 | **Overloaded day**           | A day with at least 360 minutes of teaching or at least four distinct class slots.                                                                                                |
 | **Teaching time**            | The total occupied teaching time. Overlapping classes are counted once rather than double-counted.                                                                                |
 | **Daily span**               | The time from the first class starting to the final class ending, including gaps.                                                                                                 |
-| **Longest gap**              | The longest single wait between class blocks.                                                                                                                                     |
+| **Longest gap**              | The longest single campus-bound wait between class blocks.                                                                                                                        |
 | **Active day**               | A day containing at least one scheduled class.                                                                                                                                    |
 
-Back-to-back and overlapping classes are merged when occupied time and gaps are calculated. Commute-related flags focus on campus attendance, so an online-only day is not marked as early-only, late-only, or one-hour-only. A day containing online classes and one campus class can still receive a commute-related flag for that campus trip.
+Back-to-back and overlapping classes are merged when occupied time and gaps are calculated. A day with fewer than two campus classes has no gap burden. Commute-related flags focus on campus attendance, so an online-only day is not marked as early-only, late-only, or one-hour-only. A day containing online classes and one campus class can still receive a commute-related flag for that campus trip.
 
 ## How the score works
 
