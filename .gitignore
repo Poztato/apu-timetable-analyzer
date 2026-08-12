@@ -17,3 +17,5 @@ web/public/data/
 web/node_modules/
 web/dist/
 
+# Frontend prototypes
+web/prototypes
