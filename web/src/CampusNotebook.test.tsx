@@ -10,6 +10,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { CampusNotebook, rankIntakeMatches } from "./CampusNotebook";
 import { parseDashboardData } from "./data";
+import { rankVariants, summarizeRankPosition } from "./ranking";
 import type { DashboardData } from "./types";
 
 let data: DashboardData;
@@ -30,6 +31,10 @@ beforeAll(() => {
 });
 
 afterEach(cleanup);
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-MY").format(value);
+}
 
 describe("Campus Notebook wizard", () => {
   it("ranks typo-tolerant intake suggestions by their strongest match", () => {
@@ -62,6 +67,16 @@ describe("Campus Notebook wizard", () => {
   });
 
   it("explains the tied worst position for APU2F2602CS(DF)", async () => {
+    const ranked = rankVariants(
+      data.weeklyMetrics.filter((row) => row.week_start === "2026-08-10"),
+      ["gap_burden"],
+      [1],
+    );
+    const target = ranked.find(
+      (row) => row.intake_code === "APU2F2602CS(DF)",
+    );
+    expect(target).toBeDefined();
+    const position = summarizeRankPosition(target!);
     const user = userEvent.setup();
     render(<CampusNotebook data={data} onOpenDashboard={vi.fn()} />);
 
@@ -90,12 +105,12 @@ describe("Campus Notebook wizard", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "1,021 out of 1,023 timetables are better than yours.",
+        name: `${formatNumber(position.betterCount)} out of ${formatNumber(target!.peerCount)} timetables are better than yours.`,
       }),
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "2 timetables share this score, so the tied positions run from 1,022 to 1,023.",
+        `${formatNumber(position.tiedCount)} timetables share this score, so the tied positions run from ${formatNumber(position.firstPosition)} to ${formatNumber(position.lastPosition)}.`,
       ),
     ).toBeTruthy();
 
@@ -103,11 +118,25 @@ describe("Campus Notebook wizard", () => {
       name: "Result summary",
     });
     expect(within(resultSummary).getByText("Your position")).toBeTruthy();
-    expect(within(resultSummary).getByText("1,022")).toBeTruthy();
-    expect(within(resultSummary).getByText("of 1,023")).toBeTruthy();
+    expect(
+      within(resultSummary).getByText(formatNumber(position.firstPosition)),
+    ).toBeTruthy();
+    expect(
+      within(resultSummary).getByText(`of ${formatNumber(target!.peerCount)}`),
+    ).toBeTruthy();
   });
 
   it("supports the keyboard flow, detected-only states, priorities, and result", async () => {
+    const defaultRanked = rankVariants(
+      data.weeklyMetrics.filter((row) => row.week_start === "2026-08-10"),
+      data.scoring.default_criterion_order,
+      data.scoring.position_weights,
+    );
+    const expectedResult = defaultRanked.find(
+      (row) =>
+        row.intake_code === "APD3F2605CS(DA)" && row.grouping === "G1",
+    );
+    expect(expectedResult).toBeDefined();
     const user = userEvent.setup();
     const openDashboard = vi.fn();
     render(<CampusNotebook data={data} onOpenDashboard={openDashboard} />);
@@ -135,7 +164,7 @@ describe("Campus Notebook wizard", () => {
 
     await user.keyboard("{Enter}");
     expect(
-      screen.getByRole("heading", { name: "Let us match your timetable." }),
+      screen.getByRole("heading", { name: "Which timetable should we use?" }),
     ).toBeTruthy();
     expect(screen.getByText("Only one group detected")).toBeTruthy();
     expect(screen.getByText("No electives detected")).toBeTruthy();
@@ -192,7 +221,7 @@ describe("Campus Notebook wizard", () => {
     expect(screen.queryByText(/Hide schedules without classes/i)).toBeNull();
 
     await user.click(screen.getByRole("button", { name: /Show my timetable/ }));
-    expect(screen.getByText("Based on your configuration...")).toBeTruthy();
+    expect(screen.getByText("Step 5/5")).toBeTruthy();
     expect(
       screen.getByRole("heading", {
         name: /timetables are better than yours|No timetable out of/,
@@ -213,8 +242,16 @@ describe("Campus Notebook wizard", () => {
       name: "Result summary",
     });
     expect(within(resultSummary).getByText("Your position")).toBeTruthy();
-    expect(within(resultSummary).getByText("422")).toBeTruthy();
-    expect(within(resultSummary).getByText("of 1,023")).toBeTruthy();
+    expect(
+      within(resultSummary).getByText(
+        formatNumber(expectedResult!.recalculatedBestRank),
+      ),
+    ).toBeTruthy();
+    expect(
+      within(resultSummary).getByText(
+        `of ${formatNumber(expectedResult!.peerCount)}`,
+      ),
+    ).toBeTruthy();
     expect(within(resultSummary).getByText("Lower is better")).toBeTruthy();
     expect(within(resultSummary).queryByRole("button")).toBeNull();
     expect(

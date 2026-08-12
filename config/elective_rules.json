@@ -112,7 +112,7 @@
       "url": "https://publicwebsite-media.apu.edu.my/assets/2026-03/e2026Feb_Pre-U%20Brochure.pdf?VersionId=jfcPGL0uchNq4fCrwmOnVY2FAV62c4eT",
       "sha256": "731391d996ebe6e8348ee24f776a1a930e5d639c1f1006230041c470343f634f",
       "extraction_method": "Embedded PDF text, no OCR",
-      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": []}
+      "applicability": {"minimum_intake_year_month": 202601, "verified_legacy_intakes": ["UCFF2511CT"]}
     },
     {
       "id": "postgraduate-2026-04",

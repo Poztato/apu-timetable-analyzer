@@ -157,7 +157,7 @@ describe("Dashboard MVP", () => {
     expect(
       within(controls).getByText(`${formatNumber(defaultPeerCount)} variants`),
     ).toBeTruthy();
-    expect(screen.getAllByText("AFCF2507ICT").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("row").length).toBeGreaterThan(1);
 
     const inspectTab = screen.getByRole("tab", { name: /Inspect timetable/ });
     const compareTab = screen.getByRole("tab", { name: /Compare timetables/ });

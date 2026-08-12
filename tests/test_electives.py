@@ -105,6 +105,43 @@ class ElectiveConfigTests(unittest.TestCase):
         self.assertEqual(len(config["sources"]), 12)
         self.assertEqual(len(config["rules"]), 46)
 
+    def test_repository_config_splits_ucff2511ct_electives(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        config = load_elective_config(
+            repository_root / "config" / "elective_rules.json"
+        )
+        module_names = [
+            "Academic Research Skills",
+            "Perspectives In Technology",
+            "Discovering Media In The Digital Age",
+            "Psychology And Behavioral Science",
+            "Fundamentals Of Hospitality And Tourism",
+        ]
+        events = pd.DataFrame.from_records(
+            [
+                {
+                    "snapshot_id": "snapshot-one",
+                    "intake_code": "UCFF2511CT",
+                    "programme_level": "foundation",
+                    "course_code": "CT",
+                    "specialism_code": pd.NA,
+                    "academic_level": pd.NA,
+                    "intake_year": 2025,
+                    "intake_month": 11,
+                    "module_name": module_name,
+                }
+                for module_name in module_names
+            ]
+        )
+
+        variants, report = resolve_elective_profiles(events, config)
+
+        self.assertEqual(report["status_counts"], {"resolved": 1})
+        self.assertEqual(variants["elective_profile"].nunique(), 4)
+        for _, profile in variants.groupby("elective_profile"):
+            self.assertIn("Academic Research Skills", set(profile["module_name"]))
+            self.assertEqual(int(profile["is_elective"].sum()), 1)
+
     def test_normalizes_ampersands_case_and_hyphens(self) -> None:
         self.assertEqual(
             normalize_module_name("Cloud Infrastructure & Services"),

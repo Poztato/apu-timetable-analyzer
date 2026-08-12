@@ -391,9 +391,9 @@ describe("dashboard and checker filter audit", () => {
     expect(target!.recalculatedScore).toBe(twin!.recalculatedScore);
     expect(target!.recalculatedIsWorst).toBe(true);
     expect(summarizeRankPosition(target!)).toMatchObject({
-      betterCount: 1021,
-      firstPosition: 1022,
-      lastPosition: 1023,
+      betterCount: weekRows.length - 2,
+      firstPosition: weekRows.length - 1,
+      lastPosition: weekRows.length,
       tiedCount: 2,
       worseCount: 0,
     });
