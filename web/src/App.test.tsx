@@ -138,7 +138,7 @@ describe("Dashboard MVP", () => {
     }
   });
 
-  it("loads the real export and supports search, filters, and priority changes", async () => {
+  it("supports smart filters, fuzzy search, inspection, and comparison", async () => {
     const data = loadRealDashboardData();
     expect(data.filters.courses.every((option) => option.name)).toBe(true);
     expect(data.filters.specialisms.every((option) => option.name)).toBe(true);
@@ -149,62 +149,63 @@ describe("Dashboard MVP", () => {
     render(<Dashboard data={data} />);
 
     expect(
-      screen.getByRole("heading", { name: "APU Timetable Analyzer" }),
+      screen.getByRole("heading", {
+        name: "Dashboard",
+      }),
     ).toBeTruthy();
+    const controls = screen.getByRole("region", { name: "Dashboard controls" });
     expect(
-      screen.getByText(
-        new RegExp(
-          `${formatNumber(defaultPeerCount)} variants in the current comparison set`,
-        ),
-      ),
+      within(controls).getByText(`${formatNumber(defaultPeerCount)} variants`),
     ).toBeTruthy();
-    expect(screen.getAllByText("AFCF2507ICT (G1)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("AFCF2507ICT").length).toBeGreaterThan(0);
 
-    const programmeLevelSelect = screen.getByLabelText("Programme level");
-    expect(
-      within(programmeLevelSelect).getByRole("option", { name: "Degree" }),
-    ).toHaveProperty("value", "degree");
-    expect(
-      within(programmeLevelSelect).queryByRole("option", {
-        name: "degree: Degree",
-      }),
-    ).toBeNull();
+    const inspectTab = screen.getByRole("tab", { name: /Inspect timetable/ });
+    const compareTab = screen.getByRole("tab", { name: /Compare timetables/ });
+    expect(inspectTab).toHaveProperty("disabled", false);
+    expect(compareTab).toHaveProperty("disabled", false);
 
-    const courseSelect = screen.getByLabelText("Course");
-    expect(
-      within(courseSelect).getByRole("option", {
-        name: "Computer Science (CS)",
-      }),
-    ).toHaveProperty("value", "CS");
-    expect(
-      within(courseSelect).getByRole("option", {
-        name: "Accounting (ACC)",
-      }),
-    ).toHaveProperty("value", "ACC");
-
-    const specialismSelect = screen.getByLabelText("Specialism");
-    expect(
-      within(specialismSelect).getByRole("option", {
-        name: "Data Analytics",
-      }),
-    ).toHaveProperty("value", "DA");
-    expect(
-      within(specialismSelect).queryByRole("option", {
-        name: "DA: Data Analytics",
-      }),
-    ).toBeNull();
-
-    const search = screen.getByLabelText("Search intake code");
-    await user.type(search, "APD3F2605CS(DA)");
-    const matchingRow = screen.getByRole("row", {
-      name: /APD3F2605CS\(DA\).*G1/i,
+    await user.click(inspectTab);
+    expect(screen.getByText("Choose a timetable to inspect.")).toBeTruthy();
+    const inspectorPicker = screen.getByRole("combobox", {
+      name: "Timetable to inspect",
     });
-    expect(matchingRow.textContent).toContain("APD3F2605CS(DA)");
+    expect(inspectorPicker.textContent).toContain("Choose a timetable");
+    await user.click(inspectorPicker);
+    const inspectorOptions = within(
+      screen.getByRole("listbox", { name: "Timetable to inspect" }),
+    ).getAllByRole("option");
+    await user.click(inspectorOptions[0]);
     expect(
-      screen.getByText(
-        new RegExp(`Scores use ${formatNumber(defaultPeerCount)} peers`),
-      ),
+      screen.getByRole("region", { name: /Weekly timetable for/ }),
     ).toBeTruthy();
+
+    await user.click(screen.getByRole("tab", { name: /Compare timetables/ }));
+    expect(screen.getByText("Choose two timetables to begin.")).toBeTruthy();
+    expect(
+      screen.getByRole("combobox", { name: "Timetable A" }).textContent,
+    ).toContain("Choose timetable A");
+    expect(
+      screen.getByRole("combobox", { name: "Timetable B" }).textContent,
+    ).toContain("Choose timetable B");
+    expect(screen.queryByRole("region", { name: "Comparison summary" })).toBeNull();
+    await user.click(screen.getByRole("tab", { name: /Ranked list/ }));
+
+    const programmeLevelSelect = screen.getByRole("combobox", {
+      name: "Programme level",
+    });
+    expect(programmeLevelSelect.textContent).toContain("All programme levels");
+    await user.click(programmeLevelSelect);
+    const programmeOptions = screen.getByRole("listbox", {
+      name: "Programme level",
+    });
+    expect(
+      within(programmeOptions).getByRole("option", { name: /^Degree/ }),
+    ).toBeTruthy();
+    expect(
+      within(programmeOptions).queryByRole("option", {
+        name: /^degree: Degree/,
+      }),
+    ).toBeNull();
 
     await user.click(screen.getByLabelText("Move Gap burden down"));
     const priorities = screen.getByRole("list", {
@@ -250,26 +251,113 @@ describe("Dashboard MVP", () => {
         deliveryMode: "",
       },
     ).length;
-    await user.selectOptions(
-      screen.getByLabelText("Programme level"),
-      "foundation",
+    await user.click(programmeLevelSelect);
+    await user.click(
+      within(
+        screen.getByRole("listbox", { name: "Programme level" }),
+      ).getByRole("option", { name: /^Foundation/ }),
     );
     expect(
-      await screen.findByText(
-        new RegExp(
-          `${formatNumber(expectedFoundationPeers)} variants in the current comparison set`,
-        ),
+      await within(controls).findByText(
+        `${formatNumber(expectedFoundationPeers)} variants`,
       ),
     ).toBeTruthy();
-    await user.selectOptions(screen.getByLabelText("Programme level"), "");
-
-    await user.selectOptions(screen.getByLabelText("Course"), "CS");
     expect(
-      await screen.findByText(
-        new RegExp(
-          `${formatNumber(expectedCoursePeers)} variants in the current comparison set`,
-        ),
-      ),
+      screen.getByRole("combobox", { name: "Specialism" }),
+    ).toHaveProperty("disabled", true);
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Programme level" }),
+    );
+    await user.click(
+      within(
+        screen.getByRole("listbox", { name: "Programme level" }),
+      ).getByRole("option", { name: /^All programme levels/ }),
+    );
+
+    await user.click(screen.getByRole("combobox", { name: "Course" }));
+    const courseOptions = screen.getByRole("listbox", { name: "Course" });
+    expect(
+      within(courseOptions).getByRole("option", {
+        name: /^Computer Science \(CS\)/,
+      }),
+    ).toBeTruthy();
+    await user.click(
+      within(courseOptions).getByRole("option", {
+        name: /^Computer Science \(CS\)/,
+      }),
+    );
+    expect(
+      await within(controls).findByText(`${formatNumber(expectedCoursePeers)} variants`),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("combobox", { name: "Specialism" }));
+    const specialismOptions = screen.getByRole("listbox", {
+      name: "Specialism",
+    });
+    expect(
+      within(specialismOptions).getByRole("option", { name: /^Data Analytics/ }),
+    ).toBeTruthy();
+    expect(
+      within(specialismOptions).queryByRole("option", {
+        name: /^Financial Technology/,
+      }),
+    ).toBeNull();
+    await user.keyboard("{Escape}");
+
+    const search = screen.getByLabelText("Search intake or programme");
+    await user.type(search, "APD3F2605CS(D)");
+    const matchingRow = screen.getByRole("row", {
+      name: /APD3F2605CS\(DA\).*G1/i,
+    });
+    expect(matchingRow.textContent).toContain("APD3F2605CS(DA)");
+    expect(
+      screen.getByText(`Scores still use ${formatNumber(expectedCoursePeers)} peers.`),
+    ).toBeTruthy();
+    expect(
+      within(matchingRow).queryByRole("button", { name: "Compare" }),
+    ).toBeNull();
+
+    await user.click(within(matchingRow).getByRole("button", { name: "Inspect" }));
+    expect(
+      screen
+        .getByRole("tab", { name: /Inspect timetable/ })
+        .getAttribute("aria-selected"),
+    ).toBe("true");
+    expect(
+      screen.getByRole("region", {
+        name: "Weekly timetable for APD3F2605CS(DA)",
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText("Lower is better")).toBeTruthy();
+    expect(screen.getByText("/100")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Compare as/ })).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: /Compare timetables/ }));
+    expect(
+      screen.getByRole("heading", {
+        name: "Compare two timetables.",
+      }),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("combobox", { name: "Timetable A" }));
+    const timetableAOptions = within(
+      screen.getByRole("listbox", { name: "Timetable A" }),
+    ).getAllByRole("option");
+    expect(timetableAOptions.length).toBeGreaterThan(1);
+    await user.click(timetableAOptions[0]);
+
+    await user.click(screen.getByRole("combobox", { name: "Timetable B" }));
+    const timetableBOptions = within(
+      screen.getByRole("listbox", { name: "Timetable B" }),
+    ).getAllByRole("option");
+    await user.click(timetableBOptions.at(-1)!);
+
+    expect(screen.getByRole("region", { name: "Comparison summary" })).toBeTruthy();
+    expect(
+      screen.getByRole("region", {
+        name: /Compared weekly timetable for/,
+      }),
     ).toBeTruthy();
   });
 });

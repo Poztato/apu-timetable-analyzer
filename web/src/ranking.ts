@@ -68,6 +68,15 @@ export interface RankedVariant extends WeeklyMetric {
   peerCount: number;
 }
 
+export interface RankPositionSummary {
+  betterCount: number;
+  worseCount: number;
+  firstPosition: number;
+  lastPosition: number;
+  tiedCount: number;
+  isTied: boolean;
+}
+
 export interface FilterState {
   weekStart: string;
   grouping: string;
@@ -149,11 +158,11 @@ export function rankVariants(
     return [];
   }
   if (
-    criterionOrder.length !== CRITERION_KEYS.length ||
-    new Set(criterionOrder).size !== CRITERION_KEYS.length ||
-    CRITERION_KEYS.some((criterion) => !criterionOrder.includes(criterion))
+    criterionOrder.length > CRITERION_KEYS.length ||
+    new Set(criterionOrder).size !== criterionOrder.length ||
+    criterionOrder.some((criterion) => !CRITERION_KEYS.includes(criterion))
   ) {
-    throw new Error("The frustration criterion order is incomplete.");
+    throw new Error("The frustration criterion order is invalid.");
   }
   if (
     positionWeights.length !== criterionOrder.length ||
@@ -168,11 +177,12 @@ export function rankVariants(
     () => ({}) as Record<CriterionKey, ComponentScore>,
   );
 
-  criterionOrder.forEach((criterion, criterionIndex) => {
+  CRITERION_KEYS.forEach((criterion) => {
     const rawValues = rows.map((row) => criterionRawValue(row, criterion));
     const percentiles = strictLowerPercentiles(rawValues);
+    const activeIndex = criterionOrder.indexOf(criterion);
     rows.forEach((_, rowIndex) => {
-      const weight = normalizedWeights[criterionIndex];
+      const weight = activeIndex >= 0 ? normalizedWeights[activeIndex] : 0;
       componentsByRow[rowIndex][criterion] = {
         raw: rawValues[rowIndex],
         percentile: percentiles[rowIndex],
@@ -211,6 +221,35 @@ export function rankVariants(
     recalculatedIsMostAverage: distances[index] === minimumDistance,
     peerCount: rows.length,
   }));
+}
+
+export function summarizeRankPosition(
+  row: Pick<
+    RankedVariant,
+    "peerCount" | "recalculatedBestRank" | "recalculatedWorstRank"
+  >,
+): RankPositionSummary {
+  const firstPosition = row.recalculatedBestRank;
+  const lastPosition = row.peerCount - row.recalculatedWorstRank + 1;
+  const tiedCount = lastPosition - firstPosition + 1;
+
+  if (
+    row.peerCount < 1 ||
+    firstPosition < 1 ||
+    lastPosition < firstPosition ||
+    lastPosition > row.peerCount
+  ) {
+    throw new Error("The ranked timetable position is invalid.");
+  }
+
+  return {
+    betterCount: firstPosition - 1,
+    worseCount: row.recalculatedWorstRank - 1,
+    firstPosition,
+    lastPosition,
+    tiedCount,
+    isTied: tiedCount > 1,
+  };
 }
 
 function matchesDeliveryMode(row: WeeklyMetric, mode: string): boolean {

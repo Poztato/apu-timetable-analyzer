@@ -5,6 +5,7 @@ import {
   filterWeeklyMetrics,
   rankVariants,
   strictLowerPercentiles,
+  summarizeRankPosition,
 } from "./ranking";
 import type { FilterState } from "./ranking";
 import type { IntakeMetadata, WeeklyMetric } from "./types";
@@ -123,6 +124,41 @@ describe("rankVariants", () => {
 
     expect(defaultRanked[0].recalculatedIsWorst).toBe(true);
     expect(reversedRanked[1].recalculatedIsWorst).toBe(true);
+  });
+
+  it("supports removed criteria and an intentionally disabled ranking", () => {
+    const rows = [
+      weeklyMetric("GAP", 100, 0),
+      weeklyMetric("LOAD", 0, 1),
+    ];
+    const gapOnly = rankVariants(rows, ["gap_burden"], [1]);
+    const unranked = rankVariants(rows, [], []);
+
+    expect(gapOnly[0].recalculatedIsWorst).toBe(true);
+    expect(gapOnly[1].components.overloaded.weight).toBe(0);
+    expect(unranked.every((row) => row.recalculatedScore === 0)).toBe(true);
+    expect(unranked.every((row) => row.recalculatedBestRank === 1)).toBe(true);
+  });
+
+  it("reports the complete position range for tied scores", () => {
+    const ranked = rankVariants(
+      [
+        weeklyMetric("BETTER", 0),
+        weeklyMetric("TIED-A", 100),
+        weeklyMetric("TIED-B", 100),
+      ],
+      ["gap_burden"],
+      [1],
+    );
+
+    expect(summarizeRankPosition(ranked[1])).toEqual({
+      betterCount: 1,
+      worseCount: 0,
+      firstPosition: 2,
+      lastPosition: 3,
+      tiedCount: 2,
+      isTied: true,
+    });
   });
 });
 
