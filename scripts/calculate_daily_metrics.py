@@ -255,6 +255,33 @@ def _merge_intervals(
     return merged
 
 
+def _campus_bound_gaps(
+    intervals: Sequence[tuple[pd.Timestamp, pd.Timestamp]],
+    campus_intervals: Sequence[tuple[pd.Timestamp, pd.Timestamp]],
+) -> list[int]:
+    if len(campus_intervals) < 2:
+        return []
+
+    merged_campus = _merge_intervals(campus_intervals)
+    campus_window_start = merged_campus[0][0]
+    campus_window_end = merged_campus[-1][1]
+    bounded_intervals = [
+        (
+            max(start_at, campus_window_start),
+            min(end_at, campus_window_end),
+        )
+        for start_at, end_at in intervals
+        if start_at < campus_window_end and end_at > campus_window_start
+    ]
+    occupied_blocks = _merge_intervals(bounded_intervals)
+    return [
+        _whole_minutes(previous_end, next_start, "Gap duration")
+        for (_, previous_end), (next_start, _) in zip(
+            occupied_blocks, occupied_blocks[1:]
+        )
+    ]
+
+
 def _overlap_pair_counts(
     intervals: Sequence[tuple[pd.Timestamp, pd.Timestamp]],
 ) -> tuple[int, int]:
@@ -284,22 +311,19 @@ def _calculate_day(
     intervals = list(zip(slots["start_at"], slots["end_at"]))
     exact_overlap_pairs, overlap_pairs = _overlap_pair_counts(intervals)
     merged = _merge_intervals(intervals)
+    campus_slots = slots.loc[slots["delivery_mode"] == "campus"]
+    campus_intervals = list(zip(campus_slots["start_at"], campus_slots["end_at"]))
+    merged_campus_intervals = _merge_intervals(campus_intervals)
 
     teaching_minutes = sum(
         _whole_minutes(start_at, end_at, "Teaching duration")
         for start_at, end_at in merged
     )
-    gaps = [
-        _whole_minutes(previous_end, next_start, "Gap duration")
-        for (_, previous_end), (next_start, _) in zip(merged, merged[1:])
-    ]
+    gaps = _campus_bound_gaps(intervals, campus_intervals)
     first_class_start = merged[0][0]
     last_class_end = merged[-1][1]
     event_count = len(slots)
     delivery_counts = slots["delivery_mode"].value_counts().to_dict()
-    campus_slots = slots.loc[slots["delivery_mode"] == "campus"]
-    campus_intervals = list(zip(campus_slots["start_at"], campus_slots["end_at"]))
-    merged_campus_intervals = _merge_intervals(campus_intervals)
     campus_teaching_minutes = sum(
         _whole_minutes(start_at, end_at, "Campus teaching duration")
         for start_at, end_at in merged_campus_intervals

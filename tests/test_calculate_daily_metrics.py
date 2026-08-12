@@ -288,6 +288,10 @@ class DailyMeasureTests(unittest.TestCase):
         self.assertEqual(row["campus_event_count"], 1)
         self.assertEqual(row["online_event_count"], 1)
         self.assertEqual(row["unknown_event_count"], 0)
+        self.assertEqual(row["span_minutes"], 180)
+        self.assertEqual(row["teaching_minutes"], 120)
+        self.assertEqual(row["total_gap_minutes"], 0)
+        self.assertEqual(row["longest_gap_minutes"], 0)
         self.assertTrue(row["one_hour_only_flag"])
 
     def test_online_only_day_gets_no_commute_flags(self) -> None:
@@ -323,6 +327,93 @@ class DailyMeasureTests(unittest.TestCase):
         self.assertFalse(row["early_only_flag"])
         self.assertTrue(row["late_only_flag"])
         self.assertTrue(row["one_hour_only_flag"])
+        self.assertEqual(row["span_minutes"], 420)
+        self.assertEqual(row["teaching_minutes"], 180)
+        self.assertEqual(row["total_gap_minutes"], 0)
+        self.assertEqual(row["longest_gap_minutes"], 0)
+
+    def test_online_class_between_campus_classes_splits_the_wait(self) -> None:
+        row = metric_row(
+            source_event(
+                "CAMPUS-MORNING",
+                "2026-08-03T09:00:00+08:00",
+                "2026-08-03T10:00:00+08:00",
+                delivery_mode="campus",
+            ),
+            source_event(
+                "ONLINE-MIDDAY",
+                "2026-08-03T12:00:00+08:00",
+                "2026-08-03T13:00:00+08:00",
+                delivery_mode="online",
+            ),
+            source_event(
+                "CAMPUS-AFTERNOON",
+                "2026-08-03T15:00:00+08:00",
+                "2026-08-03T16:00:00+08:00",
+                delivery_mode="campus",
+            ),
+        )
+
+        self.assertEqual(row["span_minutes"], 420)
+        self.assertEqual(row["teaching_minutes"], 180)
+        self.assertEqual(row["total_gap_minutes"], 240)
+        self.assertEqual(row["longest_gap_minutes"], 120)
+
+    def test_online_classes_at_edges_do_not_extend_the_campus_gap(self) -> None:
+        row = metric_row(
+            source_event(
+                "ONLINE-EARLY",
+                "2026-08-03T08:00:00+08:00",
+                "2026-08-03T09:00:00+08:00",
+                delivery_mode="online",
+            ),
+            source_event(
+                "CAMPUS-MORNING",
+                "2026-08-03T10:00:00+08:00",
+                "2026-08-03T11:00:00+08:00",
+                delivery_mode="campus",
+            ),
+            source_event(
+                "CAMPUS-AFTERNOON",
+                "2026-08-03T14:00:00+08:00",
+                "2026-08-03T15:00:00+08:00",
+                delivery_mode="campus",
+            ),
+            source_event(
+                "ONLINE-LATE",
+                "2026-08-03T17:00:00+08:00",
+                "2026-08-03T18:00:00+08:00",
+                delivery_mode="online",
+            ),
+        )
+
+        self.assertEqual(row["span_minutes"], 600)
+        self.assertEqual(row["teaching_minutes"], 240)
+        self.assertEqual(row["total_gap_minutes"], 180)
+        self.assertEqual(row["longest_gap_minutes"], 180)
+
+    def test_separated_online_classes_do_not_create_a_gap(self) -> None:
+        row = metric_row(
+            source_event(
+                "ONLINE-MORNING",
+                "2026-08-03T09:00:00+08:00",
+                "2026-08-03T10:00:00+08:00",
+                delivery_mode="online",
+            ),
+            source_event(
+                "ONLINE-AFTERNOON",
+                "2026-08-03T15:00:00+08:00",
+                "2026-08-03T16:00:00+08:00",
+                delivery_mode="online",
+            ),
+        )
+
+        self.assertEqual(row["event_count"], 2)
+        self.assertEqual(row["online_event_count"], 2)
+        self.assertEqual(row["span_minutes"], 420)
+        self.assertEqual(row["teaching_minutes"], 120)
+        self.assertEqual(row["total_gap_minutes"], 0)
+        self.assertEqual(row["longest_gap_minutes"], 0)
 
     def test_retains_nullable_intake_metadata_types(self) -> None:
         metrics = calculate_daily_metrics(

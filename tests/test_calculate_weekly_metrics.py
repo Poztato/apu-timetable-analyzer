@@ -45,8 +45,11 @@ def daily_record(
     span_minutes = int(
         (last_class_end - first_class_start).total_seconds() // 60
     )
-    if span_minutes != teaching_minutes + gap_minutes:
-        raise AssertionError("Fixture span must equal teaching time plus gaps.")
+    idle_span_minutes = span_minutes - teaching_minutes
+    if idle_span_minutes < 0:
+        raise AssertionError("Fixture teaching time cannot exceed its span.")
+    if gap_minutes > idle_span_minutes:
+        raise AssertionError("Fixture gap cannot exceed all idle span time.")
     return {
         "variant_id": f"variant-{grouping}-{elective_profile}",
         "snapshot_id": "snapshot-one",
@@ -218,6 +221,27 @@ class WeeklyAggregationTests(unittest.TestCase):
 
         self.assertEqual(row["earliest_start"], "08:30")
         self.assertEqual(row["latest_end"], "13:00")
+
+    def test_accepts_campus_bound_gap_smaller_than_all_idle_time(self) -> None:
+        daily = daily_frame(
+            daily_record(
+                date(2026, 8, 3),
+                "08:00",
+                "16:00",
+                event_count=3,
+                merged_block_count=3,
+                teaching_minutes=180,
+                gap_minutes=180,
+                longest_gap_minutes=180,
+                campus_events=2,
+                online_events=1,
+            )
+        )
+
+        row = calculate_weekly_metrics(daily).iloc[0]
+
+        self.assertEqual(row["total_gap_minutes"], 180)
+        self.assertEqual(row["maximum_daily_span"], 480)
 
     def test_keeps_group_weeks_separate(self) -> None:
         group_one = daily_record(

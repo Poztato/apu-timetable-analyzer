@@ -182,11 +182,11 @@ def _validate_daily_metrics(daily: pd.DataFrame) -> None:
         + daily["unknown_event_count"]
     ).any():
         raise WeeklyMetricError("Daily delivery counts do not match event counts.")
-    if (
-        daily["span_minutes"]
-        != daily["teaching_minutes"] + daily["total_gap_minutes"]
-    ).any():
-        raise WeeklyMetricError("A daily span does not equal teaching time plus gaps.")
+    idle_span_minutes = daily["span_minutes"] - daily["teaching_minutes"]
+    if (idle_span_minutes < 0).any():
+        raise WeeklyMetricError("Daily teaching time exceeds the daily span.")
+    if (daily["total_gap_minutes"] > idle_span_minutes).any():
+        raise WeeklyMetricError("A campus-bound gap exceeds all daily idle time.")
     if (daily["longest_gap_minutes"] > daily["total_gap_minutes"]).any():
         raise WeeklyMetricError("A longest daily gap exceeds the total daily gap.")
     if (
