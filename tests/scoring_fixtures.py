@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from scripts.scoring_model import parse_scoring_model
+
+
+SCORING_CONFIG = {
+    "model_version": "daily_convenience_v1",
+    "weekly_divisor_days": 7,
+    "default_time_preference": "balanced",
+    "time_preferences": [
+        {
+            "key": "balanced",
+            "label": "Balanced midday",
+            "short_label": "Midday",
+            "start": "11:00",
+            "end": "13:30",
+            "description": "Keeps physical teaching close to the middle of the day.",
+        },
+        {
+            "key": "morning",
+            "label": "Prefer mornings",
+            "short_label": "Morning",
+            "start": "09:00",
+            "end": "11:30",
+            "description": "Favours physical classes that leave the afternoon clearer.",
+        },
+        {
+            "key": "afternoon",
+            "label": "Prefer afternoons",
+            "short_label": "Afternoon",
+            "start": "13:30",
+            "end": "16:00",
+            "description": "Favours physical classes that avoid early starts.",
+        },
+    ],
+    "component_weights": {
+        "campus_trip": 20,
+        "placement": 30,
+        "span": 20,
+        "waiting": 10,
+        "short_day": 10,
+        "long_day": 10,
+    },
+    "emphasis_bonus": {"short_day": 5, "long_day": 5},
+    "online_day": {"base_points": 5, "span_points": 7, "load_points": 7},
+    "ramps": {
+        "placement": {"low": 0, "high": 240, "reverse": False},
+        "span": {"low": 180, "high": 540, "reverse": False},
+        "waiting": {"low": 0, "high": 180, "reverse": False},
+        "short_day": {"low": 60, "high": 120, "reverse": True},
+        "long_day": {"low": 240, "high": 360, "reverse": False},
+    },
+}
+
+SCORING_MODEL = parse_scoring_model(SCORING_CONFIG)

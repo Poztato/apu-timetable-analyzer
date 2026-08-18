@@ -12,8 +12,14 @@ from typing import Any, Mapping, Sequence
 
 import pandas as pd
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.scoring_model import ScoringModel, ScoringModelError, load_scoring_model
+
 
 INDEX_RELATIVE_PATH = Path("data/snapshots/index.json")
+SCORING_CONFIG_RELATIVE_PATH = Path("config/scoring.json")
 PROCESSED_DIRECTORY_RELATIVE_PATH = Path("data/processed")
 INPUT_FILENAME = "daily_metrics.parquet"
 OUTPUT_FILENAME = "intake_week_metrics.parquet"
@@ -56,21 +62,39 @@ REQUIRED_COLUMNS = {
     "event_count",
     "merged_block_count",
     "teaching_minutes",
+    "physical_teaching_minutes",
     "first_class_start",
     "last_class_end",
     "span_minutes",
-    "total_gap_minutes",
-    "longest_gap_minutes",
+    "first_physical_start",
+    "last_physical_end",
+    "physical_span_minutes",
+    "campus_waiting_minutes",
+    "longest_campus_wait_minutes",
+    "placement_deviation_minutes",
     "exact_overlap_pair_count",
     "overlap_pair_count",
+    "physical_event_count",
     "campus_event_count",
     "online_event_count",
     "unknown_event_count",
-    "early_only_flag",
-    "late_only_flag",
-    "one_hour_only_flag",
-    "overloaded_flag",
+    "day_type",
+    "placement_penalty",
+    "span_penalty",
+    "waiting_penalty",
+    "short_day_penalty",
+    "long_day_penalty",
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
+    "balanced_day_score",
 }
+
+NULLABLE_COLUMNS = {"first_physical_start", "last_physical_end"}
 
 OUTPUT_COLUMNS = [
     "variant_id",
@@ -83,31 +107,43 @@ OUTPUT_COLUMNS = [
     "elective_status",
     "elective_rule_id",
     "active_days",
-    "campus_days",
+    "empty_days",
+    "physical_days",
     "online_only_days",
     "weekend_days",
     "total_event_records",
     "total_events",
     "total_merged_blocks",
     "total_teaching_minutes",
-    "total_gap_minutes",
-    "longest_gap_minutes",
-    "days_with_gaps",
+    "total_physical_teaching_minutes",
+    "total_span_minutes",
+    "total_physical_span_minutes",
+    "total_campus_waiting_minutes",
+    "longest_campus_wait_minutes",
+    "days_with_campus_waiting",
+    "average_placement_deviation_minutes",
     "days_with_exact_overlaps",
     "days_with_overlaps",
     "exact_overlap_pair_count",
     "overlap_pair_count",
+    "total_physical_events",
     "total_campus_events",
     "total_online_events",
     "total_unknown_events",
-    "early_only_days",
-    "late_only_days",
-    "one_hour_only_days",
-    "overloaded_days",
     "earliest_start",
     "latest_end",
     "maximum_daily_span",
+    "maximum_physical_span",
     "maximum_daily_teaching_minutes",
+    "maximum_physical_teaching_minutes",
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
+    "balanced_score",
     *METADATA_COLUMNS,
 ]
 
@@ -116,22 +152,49 @@ NONNEGATIVE_COLUMNS = [
     "event_count",
     "merged_block_count",
     "teaching_minutes",
+    "physical_teaching_minutes",
     "span_minutes",
-    "total_gap_minutes",
-    "longest_gap_minutes",
+    "physical_span_minutes",
+    "campus_waiting_minutes",
+    "longest_campus_wait_minutes",
+    "placement_deviation_minutes",
     "exact_overlap_pair_count",
     "overlap_pair_count",
+    "physical_event_count",
     "campus_event_count",
     "online_event_count",
     "unknown_event_count",
+    "placement_penalty",
+    "span_penalty",
+    "waiting_penalty",
+    "short_day_penalty",
+    "long_day_penalty",
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
+    "balanced_day_score",
 ]
 
-FLAG_COLUMNS = [
-    "is_weekend",
-    "early_only_flag",
-    "late_only_flag",
-    "one_hour_only_flag",
-    "overloaded_flag",
+PENALTY_COLUMNS = [
+    "placement_penalty",
+    "span_penalty",
+    "waiting_penalty",
+    "short_day_penalty",
+    "long_day_penalty",
+]
+
+DAILY_COMPONENT_COLUMNS = [
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
 ]
 
 
@@ -151,7 +214,7 @@ def _validate_daily_metrics(daily: pd.DataFrame) -> None:
             + "."
         )
 
-    for column in REQUIRED_COLUMNS:
+    for column in REQUIRED_COLUMNS.difference(NULLABLE_COLUMNS):
         if daily[column].isna().any():
             raise WeeklyMetricError(
                 f"The daily metric table contains a blank {column}."
@@ -177,24 +240,56 @@ def _validate_daily_metrics(daily: pd.DataFrame) -> None:
         raise WeeklyMetricError("A daily merged block count is invalid.")
     if (
         daily["event_count"]
-        != daily["campus_event_count"]
-        + daily["online_event_count"]
-        + daily["unknown_event_count"]
+        != daily["physical_event_count"] + daily["online_event_count"]
     ).any():
         raise WeeklyMetricError("Daily delivery counts do not match event counts.")
+    if (
+        daily["physical_event_count"]
+        != daily["campus_event_count"] + daily["unknown_event_count"]
+    ).any():
+        raise WeeklyMetricError("Daily physical counts do not match delivery counts.")
     idle_span_minutes = daily["span_minutes"] - daily["teaching_minutes"]
     if (idle_span_minutes < 0).any():
         raise WeeklyMetricError("Daily teaching time exceeds the daily span.")
-    if (daily["total_gap_minutes"] > idle_span_minutes).any():
-        raise WeeklyMetricError("A campus-bound gap exceeds all daily idle time.")
-    if (daily["longest_gap_minutes"] > daily["total_gap_minutes"]).any():
-        raise WeeklyMetricError("A longest daily gap exceeds the total daily gap.")
+    if (daily["physical_teaching_minutes"] > daily["teaching_minutes"]).any():
+        raise WeeklyMetricError("Physical teaching exceeds all daily teaching.")
+    physical_idle_minutes = (
+        daily["physical_span_minutes"] - daily["physical_teaching_minutes"]
+    )
+    if (physical_idle_minutes < 0).any():
+        raise WeeklyMetricError("Physical teaching exceeds the physical span.")
+    if (daily["campus_waiting_minutes"] > physical_idle_minutes).any():
+        raise WeeklyMetricError("Campus waiting exceeds physical idle time.")
+    if (
+        daily["longest_campus_wait_minutes"]
+        > daily["campus_waiting_minutes"]
+    ).any():
+        raise WeeklyMetricError(
+            "A longest campus wait exceeds total daily campus waiting."
+        )
     if (
         daily["exact_overlap_pair_count"] > daily["overlap_pair_count"]
     ).any():
         raise WeeklyMetricError("Exact overlap pairs exceed all overlap pairs.")
     if (daily["last_class_end"] <= daily["first_class_start"]).any():
         raise WeeklyMetricError("A daily first or last class timestamp is invalid.")
+    if not set(daily["day_type"].astype(str)).issubset({"physical", "online"}):
+        raise WeeklyMetricError("A daily metric row has an invalid day type.")
+    expected_physical = daily["physical_teaching_minutes"] > 0
+    if (expected_physical != (daily["day_type"] == "physical")).any():
+        raise WeeklyMetricError("Daily type does not match physical teaching.")
+    physical_time_missing = daily["first_physical_start"].isna() | daily[
+        "last_physical_end"
+    ].isna()
+    if (physical_time_missing == expected_physical).any():
+        raise WeeklyMetricError("Physical day timestamps are incomplete.")
+    if ((daily[PENALTY_COLUMNS] < 0) | (daily[PENALTY_COLUMNS] > 1)).any().any():
+        raise WeeklyMetricError("A smooth daily penalty falls outside 0 to 1.")
+    component_total = daily[DAILY_COMPONENT_COLUMNS].sum(axis=1)
+    if not (component_total - daily["balanced_day_score"]).abs().le(0.00001).all():
+        raise WeeklyMetricError("Daily component scores do not match the day score.")
+    if (daily["balanced_day_score"] > 100.000001).any():
+        raise WeeklyMetricError("A balanced daily score exceeds 100.")
 
     for row in daily[["week_start", "event_date"]].itertuples(index=False):
         day_offset = (row.event_date - row.week_start).days
@@ -223,9 +318,8 @@ def _validate_daily_metrics(daily: pd.DataFrame) -> None:
                 "Weekly clock measures require whole-minute timestamps."
             )
 
-    for column in FLAG_COLUMNS:
-        if not pd.api.types.is_bool_dtype(daily[column]):
-            raise WeeklyMetricError(f"Daily flag {column} must be boolean.")
+    if not pd.api.types.is_bool_dtype(daily["is_weekend"]):
+        raise WeeklyMetricError("Daily flag is_weekend must be boolean.")
 
     available_metadata = [
         column for column in METADATA_COLUMNS if column in daily.columns
@@ -248,13 +342,38 @@ def _format_clock(minutes: int) -> str:
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
-def _aggregate_week(week: pd.DataFrame) -> dict[str, Any]:
+def _aggregate_week(
+    week: pd.DataFrame, scoring_model: ScoringModel
+) -> dict[str, Any]:
     earliest_start_minutes = min(
         _clock_minutes(value) for value in week["first_class_start"]
     )
     latest_end_minutes = max(
         _clock_minutes(value) for value in week["last_class_end"]
     )
+
+    physical_teaching_total = int(week["physical_teaching_minutes"].sum())
+    placement_deviation = (
+        float(
+            (
+                week["placement_deviation_minutes"]
+                * week["physical_teaching_minutes"]
+            ).sum()
+            / physical_teaching_total
+        )
+        if physical_teaching_total
+        else 0.0
+    )
+    component_scores = {
+        column: round(
+            float(week[column].sum()) / scoring_model.weekly_divisor_days,
+            6,
+        )
+        for column in DAILY_COMPONENT_COLUMNS
+    }
+    active_days = len(week)
+    if active_days > scoring_model.weekly_divisor_days:
+        raise WeeklyMetricError("A weekly variant contains more than seven days.")
 
     result = {
         "variant_id": week["variant_id"].iloc[0],
@@ -266,52 +385,68 @@ def _aggregate_week(week: pd.DataFrame) -> dict[str, Any]:
         "elective_profile_name": week["elective_profile_name"].iloc[0],
         "elective_status": week["elective_status"].iloc[0],
         "elective_rule_id": week["elective_rule_id"].iloc[0],
-        "active_days": len(week),
-        "campus_days": int((week["campus_event_count"] > 0).sum()),
-        "online_only_days": int(
-            (
-                (week["online_event_count"] > 0)
-                & (week["campus_event_count"] == 0)
-                & (week["unknown_event_count"] == 0)
-            ).sum()
-        ),
+        "active_days": active_days,
+        "empty_days": scoring_model.weekly_divisor_days - active_days,
+        "physical_days": int((week["day_type"] == "physical").sum()),
+        "online_only_days": int((week["day_type"] == "online").sum()),
         "weekend_days": int(week["is_weekend"].sum()),
         "total_event_records": int(week["event_record_count"].sum()),
         "total_events": int(week["event_count"].sum()),
         "total_merged_blocks": int(week["merged_block_count"].sum()),
         "total_teaching_minutes": int(week["teaching_minutes"].sum()),
-        "total_gap_minutes": int(week["total_gap_minutes"].sum()),
-        "longest_gap_minutes": int(week["longest_gap_minutes"].max()),
-        "days_with_gaps": int((week["total_gap_minutes"] > 0).sum()),
+        "total_physical_teaching_minutes": physical_teaching_total,
+        "total_span_minutes": int(week["span_minutes"].sum()),
+        "total_physical_span_minutes": int(
+            week["physical_span_minutes"].sum()
+        ),
+        "total_campus_waiting_minutes": int(
+            week["campus_waiting_minutes"].sum()
+        ),
+        "longest_campus_wait_minutes": int(
+            week["longest_campus_wait_minutes"].max()
+        ),
+        "days_with_campus_waiting": int(
+            (week["campus_waiting_minutes"] > 0).sum()
+        ),
+        "average_placement_deviation_minutes": round(placement_deviation, 6),
         "days_with_exact_overlaps": int(
             (week["exact_overlap_pair_count"] > 0).sum()
         ),
         "days_with_overlaps": int((week["overlap_pair_count"] > 0).sum()),
         "exact_overlap_pair_count": int(week["exact_overlap_pair_count"].sum()),
         "overlap_pair_count": int(week["overlap_pair_count"].sum()),
+        "total_physical_events": int(week["physical_event_count"].sum()),
         "total_campus_events": int(week["campus_event_count"].sum()),
         "total_online_events": int(week["online_event_count"].sum()),
         "total_unknown_events": int(week["unknown_event_count"].sum()),
-        "early_only_days": int(week["early_only_flag"].sum()),
-        "late_only_days": int(week["late_only_flag"].sum()),
-        "one_hour_only_days": int(week["one_hour_only_flag"].sum()),
-        "overloaded_days": int(week["overloaded_flag"].sum()),
         "earliest_start": _format_clock(earliest_start_minutes),
         "latest_end": _format_clock(latest_end_minutes),
         "maximum_daily_span": int(week["span_minutes"].max()),
+        "maximum_physical_span": int(week["physical_span_minutes"].max()),
         "maximum_daily_teaching_minutes": int(week["teaching_minutes"].max()),
+        "maximum_physical_teaching_minutes": int(
+            week["physical_teaching_minutes"].max()
+        ),
+        **component_scores,
+        "balanced_score": round(
+            float(week["balanced_day_score"].sum())
+            / scoring_model.weekly_divisor_days,
+            6,
+        ),
     }
     for column in METADATA_COLUMNS:
         result[column] = week[column].iloc[0] if column in week else None
     return result
 
 
-def calculate_weekly_metrics(daily_metrics: pd.DataFrame) -> pd.DataFrame:
+def calculate_weekly_metrics(
+    daily_metrics: pd.DataFrame, scoring_model: ScoringModel
+) -> pd.DataFrame:
     """Return one factual metric row per snapshot, week, intake, and group."""
 
     _validate_daily_metrics(daily_metrics)
     records = [
-        _aggregate_week(week)
+        _aggregate_week(week, scoring_model)
         for _, week in daily_metrics.groupby(
             [*WEEKLY_KEY, "variant_id"], sort=False, dropna=False
         )
@@ -320,29 +455,32 @@ def calculate_weekly_metrics(daily_metrics: pd.DataFrame) -> pd.DataFrame:
 
     integer_columns = [
         "active_days",
-        "campus_days",
+        "empty_days",
+        "physical_days",
         "online_only_days",
         "weekend_days",
         "total_event_records",
         "total_events",
         "total_merged_blocks",
         "total_teaching_minutes",
-        "total_gap_minutes",
-        "longest_gap_minutes",
-        "days_with_gaps",
+        "total_physical_teaching_minutes",
+        "total_span_minutes",
+        "total_physical_span_minutes",
+        "total_campus_waiting_minutes",
+        "longest_campus_wait_minutes",
+        "days_with_campus_waiting",
         "days_with_exact_overlaps",
         "days_with_overlaps",
         "exact_overlap_pair_count",
         "overlap_pair_count",
+        "total_physical_events",
         "total_campus_events",
         "total_online_events",
         "total_unknown_events",
-        "early_only_days",
-        "late_only_days",
-        "one_hour_only_days",
-        "overloaded_days",
         "maximum_daily_span",
+        "maximum_physical_span",
         "maximum_daily_teaching_minutes",
+        "maximum_physical_teaching_minutes",
     ]
     for column in integer_columns:
         weekly[column] = weekly[column].astype("int64")
@@ -413,7 +551,9 @@ def _write_parquet_atomically(frame: pd.DataFrame, target: Path) -> None:
 
 
 def calculate_snapshot_weekly_metrics(
-    snapshot_id: str, repository_root: Path
+    snapshot_id: str,
+    repository_root: Path,
+    scoring_model: ScoringModel,
 ) -> dict[str, Any]:
     snapshot_directory = (
         repository_root / PROCESSED_DIRECTORY_RELATIVE_PATH / snapshot_id
@@ -439,7 +579,7 @@ def calculate_snapshot_weekly_metrics(
             f"Stage 4 metrics do not belong only to snapshot {snapshot_id}."
         )
 
-    weekly = calculate_weekly_metrics(daily_metrics)
+    weekly = calculate_weekly_metrics(daily_metrics, scoring_model)
     _write_parquet_atomically(weekly, output_path)
 
     weekly_keys = weekly[[*WEEKLY_KEY, "variant_id"]]
@@ -458,19 +598,23 @@ def calculate_snapshot_weekly_metrics(
         "active_day_count": int(weekly["active_days"].sum()),
         "total_event_count": int(weekly["total_events"].sum()),
         "total_teaching_minutes": int(weekly["total_teaching_minutes"].sum()),
-        "total_gap_minutes": int(weekly["total_gap_minutes"].sum()),
-        "weeks_with_gaps": int((weekly["days_with_gaps"] > 0).sum()),
-        "weeks_with_early_only_days": int((weekly["early_only_days"] > 0).sum()),
-        "weeks_with_late_only_days": int((weekly["late_only_days"] > 0).sum()),
-        "weeks_with_one_hour_only_days": int(
-            (weekly["one_hour_only_days"] > 0).sum()
+        "total_physical_teaching_minutes": int(
+            weekly["total_physical_teaching_minutes"].sum()
         ),
-        "weeks_with_overloaded_days": int(
-            (weekly["overloaded_days"] > 0).sum()
+        "total_campus_waiting_minutes": int(
+            weekly["total_campus_waiting_minutes"].sum()
         ),
-        "maximum_weekly_gap_minutes": int(weekly["total_gap_minutes"].max()),
-        "maximum_single_gap_minutes": int(weekly["longest_gap_minutes"].max()),
+        "weeks_with_campus_waiting": int(
+            (weekly["days_with_campus_waiting"] > 0).sum()
+        ),
+        "maximum_weekly_campus_waiting_minutes": int(
+            weekly["total_campus_waiting_minutes"].max()
+        ),
+        "maximum_single_campus_wait_minutes": int(
+            weekly["longest_campus_wait_minutes"].max()
+        ),
         "maximum_active_days": int(weekly["active_days"].max()),
+        "maximum_balanced_score": float(weekly["balanced_score"].max()),
         "earliest_observed_start": str(weekly["earliest_start"].min()),
         "latest_observed_end": str(weekly["latest_end"].max()),
         "output_path": output_path.relative_to(repository_root).as_posix(),
@@ -531,15 +675,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     repository_root = arguments.repository_root.resolve()
 
     try:
+        scoring_model = load_scoring_model(
+            repository_root / SCORING_CONFIG_RELATIVE_PATH
+        )
         index = load_snapshot_index(repository_root / INDEX_RELATIVE_PATH)
         snapshot_ids = _select_snapshot_ids(
             index, arguments.snapshot_id, arguments.all
         )
         summaries = [
-            calculate_snapshot_weekly_metrics(snapshot_id, repository_root)
+            calculate_snapshot_weekly_metrics(
+                snapshot_id, repository_root, scoring_model
+            )
             for snapshot_id in snapshot_ids
         ]
-    except WeeklyMetricError as exc:
+    except (WeeklyMetricError, ScoringModelError) as exc:
         print(f"Stage 5 processing failed: {exc}", file=sys.stderr)
         return 1
 

@@ -19,22 +19,19 @@ import pandas as pd
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.calculate_daily_metrics import DailyMetricError, load_scoring_config
-from scripts.rank_timetables import (
-    CRITERION_COLUMNS,
-    PERCENTILE_METHOD,
-    RankingError,
-    RankingProfile,
-    load_ranking_config,
+from scripts.scoring_model import (
+    SCORE_METHOD,
+    ScoringModel,
+    ScoringModelError,
+    load_scoring_model,
 )
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 CALENDAR_TIMEZONE = "Asia/Kuala_Lumpur"
 
 INDEX_RELATIVE_PATH = Path("data/snapshots/index.json")
 SCORING_CONFIG_RELATIVE_PATH = Path("config/scoring.json")
-RANKING_CONFIG_RELATIVE_PATH = Path("config/ranking.json")
 PROCESSED_DIRECTORY_RELATIVE_PATH = Path("data/processed")
 OUTPUT_DIRECTORY_RELATIVE_PATH = Path("web/public/data")
 
@@ -65,40 +62,47 @@ INTAKE_METADATA_COLUMNS = [
 
 WEEKLY_METRIC_COLUMNS = [
     "active_days",
-    "campus_days",
+    "empty_days",
+    "physical_days",
     "online_only_days",
     "weekend_days",
     "total_event_records",
     "total_events",
     "total_merged_blocks",
     "total_teaching_minutes",
-    "total_gap_minutes",
-    "longest_gap_minutes",
-    "days_with_gaps",
+    "total_physical_teaching_minutes",
+    "total_span_minutes",
+    "total_physical_span_minutes",
+    "total_campus_waiting_minutes",
+    "longest_campus_wait_minutes",
+    "days_with_campus_waiting",
+    "average_placement_deviation_minutes",
     "days_with_exact_overlaps",
     "days_with_overlaps",
     "exact_overlap_pair_count",
     "overlap_pair_count",
+    "total_physical_events",
     "total_campus_events",
     "total_online_events",
     "total_unknown_events",
-    "early_only_days",
-    "late_only_days",
-    "one_hour_only_days",
-    "overloaded_days",
     "earliest_start",
     "latest_end",
     "maximum_daily_span",
+    "maximum_physical_span",
     "maximum_daily_teaching_minutes",
+    "maximum_physical_teaching_minutes",
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
+    "balanced_score",
 ]
 
 RANKING_RESULT_COLUMNS = [
-    *[
-        f"{criterion}_{suffix}"
-        for criterion in CRITERION_COLUMNS
-        for suffix in ("percentile", "weight", "contribution")
-    ],
-    "overall_frustration",
+    "overall_score",
     "comparison_set_size",
     "comparison_median_score",
     "distance_from_median",
@@ -117,20 +121,36 @@ DAILY_METRIC_COLUMNS = [
     "event_count",
     "merged_block_count",
     "teaching_minutes",
+    "physical_teaching_minutes",
     "first_class_start",
     "last_class_end",
     "span_minutes",
-    "total_gap_minutes",
-    "longest_gap_minutes",
+    "first_physical_start",
+    "last_physical_end",
+    "physical_span_minutes",
+    "campus_waiting_minutes",
+    "longest_campus_wait_minutes",
+    "placement_deviation_minutes",
     "exact_overlap_pair_count",
     "overlap_pair_count",
+    "physical_event_count",
     "campus_event_count",
     "online_event_count",
     "unknown_event_count",
-    "early_only_flag",
-    "late_only_flag",
-    "one_hour_only_flag",
-    "overloaded_flag",
+    "day_type",
+    "placement_penalty",
+    "span_penalty",
+    "waiting_penalty",
+    "short_day_penalty",
+    "long_day_penalty",
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
+    "balanced_day_score",
 ]
 
 BLOCK_SOURCE_COLUMNS = [
@@ -359,7 +379,7 @@ def _validate_weekly_and_rankings(
     weekly: pd.DataFrame,
     rankings: pd.DataFrame,
     snapshot_id: str,
-    profile: RankingProfile,
+    scoring_model: ScoringModel,
 ) -> None:
     weekly_required = {
         "variant_id",
@@ -384,11 +404,11 @@ def _validate_weekly_and_rankings(
         "elective_profile_name",
         "elective_status",
         "elective_rule_id",
-        *CRITERION_COLUMNS.values(),
+        *WEEKLY_METRIC_COLUMNS,
         *RANKING_RESULT_COLUMNS,
         "scoring_profile",
         "scoring_profile_id",
-        "percentile_method",
+        "score_method",
     }
     _require_columns(weekly, weekly_required, "Weekly metrics")
     _require_columns(rankings, ranking_required, "Default rankings")
@@ -426,7 +446,7 @@ def _validate_weekly_and_rankings(
         "elective_profile_name",
         "elective_status",
         "elective_rule_id",
-        *CRITERION_COLUMNS.values(),
+        *WEEKLY_METRIC_COLUMNS,
     ]:
         if _series_mapping(weekly, column) != _series_mapping(rankings, column):
             raise DashboardDataError(
@@ -435,41 +455,26 @@ def _validate_weekly_and_rankings(
 
     profile_ids = set(rankings["scoring_profile_id"].dropna().astype(str))
     profile_names = set(rankings["scoring_profile"].dropna().astype(str))
-    percentile_methods = set(rankings["percentile_method"].dropna().astype(str))
-    if profile_ids != {profile.profile_id} or profile_names != {
-        profile.description
+    score_methods = set(rankings["score_method"].dropna().astype(str))
+    expected_profile = (
+        scoring_model.model_version
+        + ":"
+        + scoring_model.default_time_preference
+    )
+    if profile_ids != {scoring_model.profile_id} or profile_names != {
+        expected_profile
     }:
         raise DashboardDataError(
-            "Default rankings was not generated with the configured ranking profile."
+            "Default rankings was not generated with the configured scoring model."
         )
-    if percentile_methods != {PERCENTILE_METHOD}:
+    if score_methods != {SCORE_METHOD}:
         raise DashboardDataError(
-            "Default rankings uses an unexpected percentile method."
+            "Default rankings uses an unexpected score method."
         )
 
 
-def _build_scoring_payload(
-    profile: RankingProfile, thresholds: Mapping[str, Any]
-) -> dict[str, Any]:
-    normalized_weights = profile.normalized_weights
-    criteria = [
-        {
-            "key": criterion,
-            "metric": CRITERION_COLUMNS[criterion],
-            "position_weight": profile.position_weights[position],
-            "normalized_weight": normalized_weights[criterion],
-        }
-        for position, criterion in enumerate(profile.criterion_order)
-    ]
-    return {
-        "default_criterion_order": list(profile.criterion_order),
-        "position_weights": list(profile.position_weights),
-        "profile": profile.description,
-        "profile_id": profile.profile_id,
-        "percentile_method": PERCENTILE_METHOD,
-        "criteria": criteria,
-        "thresholds": dict(thresholds),
-    }
+def _build_scoring_payload(scoring_model: ScoringModel) -> dict[str, Any]:
+    return scoring_model.as_payload()
 
 
 def _build_intake_records(weekly: pd.DataFrame) -> list[dict[str, Any]]:
@@ -626,7 +631,7 @@ def _build_snapshot_metadata(
 def _build_compact_snapshot(
     entry: Mapping[str, Any],
     repository_root: Path,
-    profile: RankingProfile,
+    scoring_model: ScoringModel,
     scoring: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, int], pd.DataFrame]:
     snapshot_id = str(entry["snapshot_id"])
@@ -641,7 +646,9 @@ def _build_compact_snapshot(
         snapshot_directory / RANKING_INPUT_FILENAME,
         f"Stage 6 default rankings for {snapshot_id}",
     )
-    _validate_weekly_and_rankings(weekly, rankings, snapshot_id, profile)
+    _validate_weekly_and_rankings(
+        weekly, rankings, snapshot_id, scoring_model
+    )
 
     weekly = weekly.sort_values(
         ["week_start", "intake_code", "grouping", "elective_profile"],
@@ -842,7 +849,9 @@ def _write_json_atomically(payload: Mapping[str, Any], target: Path) -> dict[str
             temporary_file.write(encoded)
         os.replace(temporary_path, target)
     except OSError as exc:
-        raise DashboardDataError(f"Cannot write dashboard JSON: {target}.") from exc
+        raise DashboardDataError(
+            f"Cannot write dashboard JSON: {target}. {exc}"
+        ) from exc
     finally:
         if temporary_path is not None and temporary_path.exists():
             temporary_path.unlink()
@@ -865,22 +874,19 @@ def build_dashboard_data(repository_root: Path) -> dict[str, Any]:
 
     repository_root = repository_root.resolve()
     try:
-        profile = load_ranking_config(
-            repository_root / RANKING_CONFIG_RELATIVE_PATH
-        )
-        thresholds = load_scoring_config(
+        scoring_model = load_scoring_model(
             repository_root / SCORING_CONFIG_RELATIVE_PATH
         )
-    except (RankingError, DailyMetricError) as exc:
+    except ScoringModelError as exc:
         raise DashboardDataError(str(exc)) from exc
-    scoring = _build_scoring_payload(profile, thresholds.as_dict())
+    scoring = _build_scoring_payload(scoring_model)
     index = load_snapshot_index(repository_root / INDEX_RELATIVE_PATH)
 
     compact_snapshots: list[tuple[dict[str, Any], dict[str, int]]] = []
     manifest_entries: list[dict[str, Any]] = []
     for entry in index:
         compact, variant_indices, _ = _build_compact_snapshot(
-            entry, repository_root, profile, scoring
+            entry, repository_root, scoring_model, scoring
         )
         _assert_no_private_fields(compact)
         snapshot_id = str(entry["snapshot_id"])

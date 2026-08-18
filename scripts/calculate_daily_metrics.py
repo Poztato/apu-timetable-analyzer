@@ -7,12 +7,21 @@ import json
 import os
 import sys
 import tempfile
-from dataclasses import dataclass
-from datetime import time
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import pandas as pd
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.scoring_model import (
+    ScoringModel,
+    ScoringModelError,
+    duration_weighted_deviation,
+    load_scoring_model,
+    score_day,
+)
 
 
 INDEX_RELATIVE_PATH = Path("data/snapshots/index.json")
@@ -83,111 +92,42 @@ OUTPUT_COLUMNS = [
     "event_count",
     "merged_block_count",
     "teaching_minutes",
+    "physical_teaching_minutes",
     "first_class_start",
     "last_class_end",
     "span_minutes",
-    "total_gap_minutes",
-    "longest_gap_minutes",
+    "first_physical_start",
+    "last_physical_end",
+    "physical_span_minutes",
+    "campus_waiting_minutes",
+    "longest_campus_wait_minutes",
+    "placement_deviation_minutes",
     "exact_overlap_pair_count",
     "overlap_pair_count",
+    "physical_event_count",
     "campus_event_count",
     "online_event_count",
     "unknown_event_count",
-    "early_only_flag",
-    "late_only_flag",
-    "one_hour_only_flag",
-    "overloaded_flag",
+    "day_type",
+    "placement_penalty",
+    "span_penalty",
+    "waiting_penalty",
+    "short_day_penalty",
+    "long_day_penalty",
+    "campus_trip_score",
+    "online_commitment_score",
+    "placement_score",
+    "span_score",
+    "waiting_score",
+    "short_day_score",
+    "long_day_score",
+    "balanced_day_score",
     *METADATA_COLUMNS,
 ]
 
 
 class DailyMetricError(RuntimeError):
     """Raised when daily timetable measures cannot be calculated safely."""
-
-
-@dataclass(frozen=True)
-class DailyThresholds:
-    early_start: time
-    late_start: time
-    one_hour_max_teaching_minutes: int
-    overload_teaching_minutes: int
-    overload_event_count: int
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "early_start": self.early_start.strftime("%H:%M"),
-            "late_start": self.late_start.strftime("%H:%M"),
-            "one_hour_max_teaching_minutes": self.one_hour_max_teaching_minutes,
-            "overload_teaching_minutes": self.overload_teaching_minutes,
-            "overload_event_count": self.overload_event_count,
-        }
-
-
-def _parse_clock(value: Any, field: str) -> time:
-    if not isinstance(value, str):
-        raise DailyMetricError(f"Scoring field {field} must be a time string.")
-    try:
-        parsed = time.fromisoformat(value.strip())
-    except ValueError as exc:
-        raise DailyMetricError(
-            f"Scoring field {field} is not a valid time: {value!r}."
-        ) from exc
-    if parsed.second or parsed.microsecond or parsed.tzinfo is not None:
-        raise DailyMetricError(
-            f"Scoring field {field} must use local HH:MM precision."
-        )
-    return parsed
-
-
-def _positive_integer(value: Any, field: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise DailyMetricError(f"Scoring field {field} must be a positive integer.")
-    return value
-
-
-def parse_scoring_config(config: Mapping[str, Any]) -> DailyThresholds:
-    required = {
-        "early_start",
-        "late_start",
-        "one_hour_max_teaching_minutes",
-        "overload_teaching_minutes",
-        "overload_event_count",
-    }
-    missing = sorted(required.difference(config))
-    if missing:
-        raise DailyMetricError(
-            "Scoring config is missing fields: " + ", ".join(missing) + "."
-        )
-
-    thresholds = DailyThresholds(
-        early_start=_parse_clock(config["early_start"], "early_start"),
-        late_start=_parse_clock(config["late_start"], "late_start"),
-        one_hour_max_teaching_minutes=_positive_integer(
-            config["one_hour_max_teaching_minutes"],
-            "one_hour_max_teaching_minutes",
-        ),
-        overload_teaching_minutes=_positive_integer(
-            config["overload_teaching_minutes"], "overload_teaching_minutes"
-        ),
-        overload_event_count=_positive_integer(
-            config["overload_event_count"], "overload_event_count"
-        ),
-    )
-    if thresholds.early_start >= thresholds.late_start:
-        raise DailyMetricError("early_start must be earlier than late_start.")
-    return thresholds
-
-
-def load_scoring_config(path: Path) -> DailyThresholds:
-    try:
-        config = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError as exc:
-        raise DailyMetricError(f"Cannot find scoring config: {path}.") from exc
-    except (OSError, json.JSONDecodeError) as exc:
-        raise DailyMetricError(f"Cannot read scoring config: {path}.") from exc
-    if not isinstance(config, dict):
-        raise DailyMetricError("The scoring config must contain a JSON object.")
-    return parse_scoring_config(config)
 
 
 def _validate_variant_events(events: pd.DataFrame) -> None:
@@ -255,27 +195,27 @@ def _merge_intervals(
     return merged
 
 
-def _campus_bound_gaps(
+def _physical_bound_waits(
     intervals: Sequence[tuple[pd.Timestamp, pd.Timestamp]],
-    campus_intervals: Sequence[tuple[pd.Timestamp, pd.Timestamp]],
+    physical_intervals: Sequence[tuple[pd.Timestamp, pd.Timestamp]],
 ) -> list[int]:
-    if len(campus_intervals) < 2:
+    merged_physical = _merge_intervals(physical_intervals)
+    if len(merged_physical) < 2:
         return []
 
-    merged_campus = _merge_intervals(campus_intervals)
-    campus_window_start = merged_campus[0][0]
-    campus_window_end = merged_campus[-1][1]
+    physical_window_start = merged_physical[0][0]
+    physical_window_end = merged_physical[-1][1]
     bounded_intervals = [
         (
-            max(start_at, campus_window_start),
-            min(end_at, campus_window_end),
+            max(start_at, physical_window_start),
+            min(end_at, physical_window_end),
         )
         for start_at, end_at in intervals
-        if start_at < campus_window_end and end_at > campus_window_start
+        if start_at < physical_window_end and end_at > physical_window_start
     ]
     occupied_blocks = _merge_intervals(bounded_intervals)
     return [
-        _whole_minutes(previous_end, next_start, "Gap duration")
+        _whole_minutes(previous_end, next_start, "Campus waiting duration")
         for (_, previous_end), (next_start, _) in zip(
             occupied_blocks, occupied_blocks[1:]
         )
@@ -298,12 +238,14 @@ def _overlap_pair_counts(
     return exact_overlap_pairs, overlap_pairs
 
 
-def _local_clock(timestamp: pd.Timestamp) -> time:
-    return timestamp.timetz().replace(tzinfo=None)
+def _minute_of_day(timestamp: pd.Timestamp) -> int:
+    if timestamp.second or timestamp.microsecond:
+        raise DailyMetricError("Timetable times must use whole-minute precision.")
+    return timestamp.hour * 60 + timestamp.minute
 
 
 def _calculate_day(
-    day_events: pd.DataFrame, thresholds: DailyThresholds
+    day_events: pd.DataFrame, scoring_model: ScoringModel
 ) -> dict[str, Any]:
     slots = day_events.drop_duplicates("slot_id").sort_values(
         ["start_at", "end_at", "slot_id"], kind="stable"
@@ -311,26 +253,59 @@ def _calculate_day(
     intervals = list(zip(slots["start_at"], slots["end_at"]))
     exact_overlap_pairs, overlap_pairs = _overlap_pair_counts(intervals)
     merged = _merge_intervals(intervals)
-    campus_slots = slots.loc[slots["delivery_mode"] == "campus"]
-    campus_intervals = list(zip(campus_slots["start_at"], campus_slots["end_at"]))
-    merged_campus_intervals = _merge_intervals(campus_intervals)
+    physical_slots = slots.loc[slots["delivery_mode"] != "online"]
+    physical_intervals = list(
+        zip(physical_slots["start_at"], physical_slots["end_at"])
+    )
+    merged_physical_intervals = _merge_intervals(physical_intervals)
 
     teaching_minutes = sum(
         _whole_minutes(start_at, end_at, "Teaching duration")
         for start_at, end_at in merged
     )
-    gaps = _campus_bound_gaps(intervals, campus_intervals)
+    waits = _physical_bound_waits(intervals, physical_intervals)
     first_class_start = merged[0][0]
     last_class_end = merged[-1][1]
     event_count = len(slots)
     delivery_counts = slots["delivery_mode"].value_counts().to_dict()
-    campus_teaching_minutes = sum(
-        _whole_minutes(start_at, end_at, "Campus teaching duration")
-        for start_at, end_at in merged_campus_intervals
+    physical_teaching_minutes = sum(
+        _whole_minutes(start_at, end_at, "Physical teaching duration")
+        for start_at, end_at in merged_physical_intervals
     )
-    campus_event_count = len(campus_slots)
-    first_campus_start = (
-        merged_campus_intervals[0][0] if merged_campus_intervals else None
+    first_physical_start = (
+        merged_physical_intervals[0][0] if merged_physical_intervals else None
+    )
+    last_physical_end = (
+        merged_physical_intervals[-1][1] if merged_physical_intervals else None
+    )
+    physical_span_minutes = (
+        _whole_minutes(
+            first_physical_start,
+            last_physical_end,
+            "Physical daily span",
+        )
+        if first_physical_start is not None and last_physical_end is not None
+        else 0
+    )
+    placement_deviation_minutes = duration_weighted_deviation(
+        [
+            (_minute_of_day(start_at), _minute_of_day(end_at))
+            for start_at, end_at in merged_physical_intervals
+        ],
+        scoring_model.preferences_by_key[
+            scoring_model.default_time_preference
+        ],
+    )
+    daily_score = score_day(
+        scoring_model,
+        teaching_minutes=teaching_minutes,
+        physical_teaching_minutes=physical_teaching_minutes,
+        span_minutes=_whole_minutes(
+            first_class_start, last_class_end, "Daily span"
+        ),
+        physical_span_minutes=physical_span_minutes,
+        waiting_minutes=sum(waits),
+        placement_deviation_minutes=placement_deviation_minutes,
     )
 
     result = {
@@ -350,39 +325,38 @@ def _calculate_day(
         "event_count": event_count,
         "merged_block_count": len(merged),
         "teaching_minutes": teaching_minutes,
+        "physical_teaching_minutes": physical_teaching_minutes,
         "first_class_start": first_class_start,
         "last_class_end": last_class_end,
         "span_minutes": _whole_minutes(
             first_class_start, last_class_end, "Daily span"
         ),
-        "total_gap_minutes": sum(gaps),
-        "longest_gap_minutes": max(gaps, default=0),
+        "first_physical_start": first_physical_start,
+        "last_physical_end": last_physical_end,
+        "physical_span_minutes": physical_span_minutes,
+        "campus_waiting_minutes": sum(waits),
+        "longest_campus_wait_minutes": max(waits, default=0),
+        "placement_deviation_minutes": round(placement_deviation_minutes, 6),
         "exact_overlap_pair_count": exact_overlap_pairs,
         "overlap_pair_count": overlap_pairs,
-        "campus_event_count": campus_event_count,
+        "physical_event_count": len(physical_slots),
+        "campus_event_count": int(delivery_counts.get("campus", 0)),
         "online_event_count": int(delivery_counts.get("online", 0)),
         "unknown_event_count": int(
             event_count
             - delivery_counts.get("campus", 0)
             - delivery_counts.get("online", 0)
         ),
-        "early_only_flag": (
-            campus_event_count == 1
-            and _local_clock(first_campus_start) <= thresholds.early_start
-        ),
-        "late_only_flag": (
-            campus_event_count == 1
-            and _local_clock(first_campus_start) >= thresholds.late_start
-        ),
-        "one_hour_only_flag": (
-            campus_event_count > 0
-            and campus_teaching_minutes
-            <= thresholds.one_hour_max_teaching_minutes
-        ),
-        "overloaded_flag": (
-            teaching_minutes >= thresholds.overload_teaching_minutes
-            or event_count >= thresholds.overload_event_count
-        ),
+        "day_type": daily_score.day_type,
+        **{
+            f"{key}_penalty": round(value, 6)
+            for key, value in daily_score.penalties.items()
+        },
+        **{
+            f"{key}_score": round(value, 6)
+            for key, value in daily_score.component_points.items()
+        },
+        "balanced_day_score": round(daily_score.total, 6),
     }
     for column in METADATA_COLUMNS:
         result[column] = day_events[column].iloc[0] if column in day_events else None
@@ -390,13 +364,13 @@ def _calculate_day(
 
 
 def calculate_daily_metrics(
-    variant_events: pd.DataFrame, thresholds: DailyThresholds
+    variant_events: pd.DataFrame, scoring_model: ScoringModel
 ) -> pd.DataFrame:
     """Return one metric row for each active intake, week, group, and day."""
 
     _validate_variant_events(variant_events)
     records = [
-        _calculate_day(day_events, thresholds)
+        _calculate_day(day_events, scoring_model)
         for _, day_events in variant_events.groupby(
             [*DAILY_KEY, "variant_id"], sort=False, dropna=False
         )
@@ -408,11 +382,14 @@ def calculate_daily_metrics(
         "event_count",
         "merged_block_count",
         "teaching_minutes",
+        "physical_teaching_minutes",
         "span_minutes",
-        "total_gap_minutes",
-        "longest_gap_minutes",
+        "physical_span_minutes",
+        "campus_waiting_minutes",
+        "longest_campus_wait_minutes",
         "exact_overlap_pair_count",
         "overlap_pair_count",
+        "physical_event_count",
         "campus_event_count",
         "online_event_count",
         "unknown_event_count",
@@ -431,6 +408,7 @@ def calculate_daily_metrics(
         "elective_status",
         "elective_rule_id",
         "day_of_week",
+        "day_type",
         *[
             column
             for column in METADATA_COLUMNS
@@ -488,7 +466,7 @@ def _write_parquet_atomically(frame: pd.DataFrame, target: Path) -> None:
 def calculate_snapshot_daily_metrics(
     snapshot_id: str,
     repository_root: Path,
-    thresholds: DailyThresholds,
+    scoring_model: ScoringModel,
 ) -> dict[str, Any]:
     snapshot_directory = (
         repository_root / PROCESSED_DIRECTORY_RELATIVE_PATH / snapshot_id
@@ -514,7 +492,7 @@ def calculate_snapshot_daily_metrics(
             f"Stage 3 variants do not belong only to snapshot {snapshot_id}."
         )
 
-    metrics = calculate_daily_metrics(variant_events, thresholds)
+    metrics = calculate_daily_metrics(variant_events, scoring_model)
     _write_parquet_atomically(metrics, output_path)
 
     return {
@@ -527,21 +505,34 @@ def calculate_snapshot_daily_metrics(
         ),
         "event_count": int(metrics["event_count"].sum()),
         "teaching_minutes": int(metrics["teaching_minutes"].sum()),
-        "total_gap_minutes": int(metrics["total_gap_minutes"].sum()),
-        "days_with_gaps": int((metrics["total_gap_minutes"] > 0).sum()),
+        "physical_teaching_minutes": int(
+            metrics["physical_teaching_minutes"].sum()
+        ),
+        "campus_waiting_minutes": int(metrics["campus_waiting_minutes"].sum()),
+        "days_with_campus_waiting": int(
+            (metrics["campus_waiting_minutes"] > 0).sum()
+        ),
+        "physical_day_count": int((metrics["day_type"] == "physical").sum()),
+        "online_only_day_count": int((metrics["day_type"] == "online").sum()),
         "days_with_exact_overlaps": int(
             (metrics["exact_overlap_pair_count"] > 0).sum()
         ),
         "days_with_overlaps": int((metrics["overlap_pair_count"] > 0).sum()),
-        "early_only_day_count": int(metrics["early_only_flag"].sum()),
-        "late_only_day_count": int(metrics["late_only_flag"].sum()),
-        "one_hour_only_day_count": int(metrics["one_hour_only_flag"].sum()),
-        "overloaded_day_count": int(metrics["overloaded_flag"].sum()),
         "weekend_day_count": int(metrics["is_weekend"].sum()),
-        "maximum_total_gap_minutes": int(metrics["total_gap_minutes"].max()),
-        "maximum_longest_gap_minutes": int(metrics["longest_gap_minutes"].max()),
+        "maximum_campus_waiting_minutes": int(
+            metrics["campus_waiting_minutes"].max()
+        ),
+        "maximum_single_campus_wait_minutes": int(
+            metrics["longest_campus_wait_minutes"].max()
+        ),
         "maximum_teaching_minutes": int(metrics["teaching_minutes"].max()),
-        "thresholds": thresholds.as_dict(),
+        "maximum_physical_span_minutes": int(
+            metrics["physical_span_minutes"].max()
+        ),
+        "maximum_balanced_day_score": float(
+            metrics["balanced_day_score"].max()
+        ),
+        "scoring_profile_id": scoring_model.profile_id,
         "output_path": output_path.relative_to(repository_root).as_posix(),
         "output_size_bytes": output_path.stat().st_size,
     }
@@ -600,7 +591,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     repository_root = arguments.repository_root.resolve()
 
     try:
-        thresholds = load_scoring_config(
+        scoring_model = load_scoring_model(
             repository_root / SCORING_CONFIG_RELATIVE_PATH
         )
         index = load_snapshot_index(repository_root / INDEX_RELATIVE_PATH)
@@ -609,11 +600,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         summaries = [
             calculate_snapshot_daily_metrics(
-                snapshot_id, repository_root, thresholds
+                snapshot_id, repository_root, scoring_model
             )
             for snapshot_id in snapshot_ids
         ]
-    except DailyMetricError as exc:
+    except (DailyMetricError, ScoringModelError) as exc:
         print(f"Stage 4 processing failed: {exc}", file=sys.stderr)
         return 1
 
