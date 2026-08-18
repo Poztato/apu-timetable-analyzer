@@ -174,14 +174,12 @@
 .db-brand-mark {
   width: 42px;
   height: 42px;
-  display: grid;
-  place-items: center;
-  color: #fffdf5;
-  background: var(--db-accent);
+  display: block;
+  flex: 0 0 auto;
+  object-fit: cover;
+  background: var(--db-paper);
+  border: 1px solid var(--db-line-strong);
   border-radius: 9px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.3rem;
-  font-weight: 800;
 }
 
 .db-brand > span:last-child {
@@ -1526,15 +1524,11 @@
 .db-inspector-picker-mark {
   width: 44px;
   height: 49px;
-  display: grid;
-  place-items: center;
-  color: var(--db-success-ink);
-  background: var(--db-success);
+  display: block;
+  object-fit: cover;
+  background: var(--db-paper);
   border: 1px solid var(--db-success-line);
   border-radius: 8px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.15rem;
-  font-weight: 800;
 }
 
 .db-inspector-hero {

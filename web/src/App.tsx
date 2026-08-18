@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { BrandIcon } from "./BrandIcon";
 import { CampusNotebook } from "./CampusNotebook";
 import { Dashboard } from "./Dashboard";
 import { loadDashboardData } from "./data";
@@ -40,7 +41,7 @@ export default function App() {
   if (!data) {
     return (
       <main className="load-state" aria-live="polite">
-        <span className="load-mark" aria-hidden="true">T</span>
+        <BrandIcon className="load-mark" />
         <h1>Preparing the latest timetables.</h1>
         <p>The ranking data is being read in your browser.</p>
         <div className="load-lines" aria-hidden="true"><i /><i /><i /></div>

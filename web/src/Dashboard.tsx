@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { BrandIcon } from "./BrandIcon";
 import {
   DashboardSelect,
   type DashboardOption,
@@ -770,7 +771,7 @@ export function Dashboard({
           disabled={!onBack}
           aria-label={onBack ? "Back to timetable check" : "Timetable Check dashboard"}
         >
-          <span className="db-brand-mark">T</span>
+          <BrandIcon className="db-brand-mark" />
           <span>
             <strong>Timetable Check</strong>
             <small>Comparison desk</small>
@@ -1300,7 +1301,7 @@ export function Dashboard({
                   </p>
                 </div>
                 <div className="db-inspector-picker">
-                  <span className="db-inspector-picker-mark" aria-hidden="true">T</span>
+                  <BrandIcon className="db-inspector-picker-mark" />
                   <DashboardSelect
                     label="Timetable to inspect"
                     value=""

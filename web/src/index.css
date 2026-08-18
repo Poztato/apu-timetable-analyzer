@@ -61,6 +61,17 @@ button {
   font-weight: 800;
 }
 
+.load-mark {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 24px;
+  display: block;
+  object-fit: cover;
+  background: #fffef8;
+  border: 1px solid #17372f;
+  border-radius: 10px;
+}
+
 .load-state h1 {
   max-width: 520px;
   margin: 0;

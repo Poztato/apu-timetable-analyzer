@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { BrandIcon } from "./BrandIcon";
 import {
   rankVariants,
   summarizeRankPosition,
@@ -1541,7 +1542,7 @@ export function CampusNotebook({
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         >
-          <span className="tn-brand-mark" aria-hidden="true">T</span>
+          <BrandIcon className="tn-brand-mark" />
           <span>
             <strong>APU Timetable Analyzer</strong>
             <small>by Leonard Su</small>
@@ -1642,7 +1643,7 @@ export function CampusNotebook({
         {step !== 4 && (
           <aside className="tn-live-panel" aria-label="Live setup summary">
             <div className="tn-concept-card">
-              <span>A</span>
+              <BrandIcon className="tn-concept-mark" />
               <div>
                 <strong>APU Timetable Analyzer</strong>
                 <p>

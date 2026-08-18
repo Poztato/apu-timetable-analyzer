@@ -140,15 +140,12 @@
 .tn-brand-mark {
   width: 42px;
   height: 42px;
-  display: grid;
-  place-items: center;
-  color: #fffdf5;
-  background: var(--tn-accent);
+  display: block;
+  flex: 0 0 auto;
+  object-fit: cover;
+  background: var(--tn-paper);
+  border: 1px solid var(--tn-line-strong);
   border-radius: 9px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.3rem;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .tn-brand > span:last-child {
@@ -481,16 +478,14 @@
   gap: 12px;
 }
 
-.tn-concept-card > span {
+.tn-concept-mark {
   width: 34px;
   height: 34px;
-  display: grid;
-  place-items: center;
-  color: #fffdf5;
-  background: var(--tn-accent);
+  display: block;
+  object-fit: cover;
+  background: var(--tn-paper);
+  border: 1px solid var(--tn-line-strong);
   border-radius: 9px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 850;
 }
 
 .tn-concept-card strong,
