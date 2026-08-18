@@ -6,20 +6,23 @@ import {
   type DashboardOption,
 } from "./DashboardSelect";
 import {
-  CRITERION_DETAILS,
-  CRITERION_KEYS,
+  COMPONENT_DETAILS,
+  SCORING_COMPONENT_KEYS,
+  createScoringContext,
   filterWeeklyMetrics,
   rankVariants,
+  strongestComponent,
   type FilterState,
   type RankedVariant,
+  type ScoringPreferences,
 } from "./ranking";
 import { rankIntakeMatches } from "./CampusNotebook";
 import { VerticalTimetable } from "./VerticalTimetable";
 import type {
   CodeNameOption,
-  CriterionKey,
   DashboardData,
   IntakeMetadata,
+  ScoringComponentKey,
   WeeklyMetric,
 } from "./types";
 
@@ -30,8 +33,8 @@ type SortKey =
   | "rank"
   | "intake"
   | "score"
-  | "gap"
-  | "campusDays"
+  | "waiting"
+  | "physicalDays"
   | "teaching";
 type SortDirection = "ascending" | "descending";
 type NonWeekFilterKey = Exclude<keyof FilterState, "weekStart">;
@@ -309,10 +312,10 @@ function sortValue(row: RankedVariant, key: SortKey): string | number {
       return row.intake_code;
     case "score":
       return row.recalculatedScore;
-    case "gap":
-      return row.total_gap_minutes;
-    case "campusDays":
-      return row.campus_days;
+    case "waiting":
+      return row.total_campus_waiting_minutes;
+    case "physicalDays":
+      return row.physical_days;
     case "teaching":
       return row.total_teaching_minutes;
   }
@@ -340,22 +343,16 @@ function compareRows(
   return direction === "ascending" ? comparison : -comparison;
 }
 
-function strongestCriterion(
-  row: RankedVariant,
-  criteria: CriterionKey[],
-): CriterionKey | null {
-  return (
-    [...criteria].sort(
-      (left, right) =>
-        row.components[right].contribution - row.components[left].contribution,
-    )[0] ?? null
-  );
-}
-
-function criterionValue(criterion: CriterionKey, value: number): string {
-  return criterion === "gap_burden"
-    ? formatMinutes(value)
-    : `${value} ${value === 1 ? "day" : "days"}`;
+function componentValue(component: ScoringComponentKey, value: number): string {
+  if (
+    component === "campus_trip" ||
+    component === "online_commitment" ||
+    component === "short_day" ||
+    component === "long_day"
+  ) {
+    return `${value} ${value === 1 ? "day" : "days"}`;
+  }
+  return formatMinutes(Math.round(value));
 }
 
 function normalizeSearch(value: string): string {
@@ -435,69 +432,57 @@ interface ComparisonMetric {
   label: string;
   value: (row: RankedVariant) => string;
   raw: (row: RankedVariant) => number;
-  lowerIsBetter: boolean;
+  betterWhen: "lower" | "higher" | "neutral";
 }
 
 const COMPARISON_METRICS: ComparisonMetric[] = [
   {
-    label: "Weighted score",
+    label: "Weekly score",
     value: (row) => formatScore(row.recalculatedScore),
     raw: (row) => row.recalculatedScore,
-    lowerIsBetter: true,
+    betterWhen: "lower",
   },
   {
     label: "Position",
     value: (row) => `${formatNumber(row.recalculatedBestRank)} of ${formatNumber(row.peerCount)}`,
     raw: (row) => row.recalculatedBestRank,
-    lowerIsBetter: true,
+    betterWhen: "lower",
   },
   {
     label: "Waiting between campus classes",
-    value: (row) => formatMinutes(row.total_gap_minutes),
-    raw: (row) => row.total_gap_minutes,
-    lowerIsBetter: true,
+    value: (row) => formatMinutes(row.total_campus_waiting_minutes),
+    raw: (row) => row.total_campus_waiting_minutes,
+    betterWhen: "lower",
   },
   {
-    label: "Longest single gap",
-    value: (row) => formatMinutes(row.longest_gap_minutes),
-    raw: (row) => row.longest_gap_minutes,
-    lowerIsBetter: true,
+    label: "Physical day span",
+    value: (row) => formatMinutes(row.total_physical_span_minutes),
+    raw: (row) => row.total_physical_span_minutes,
+    betterWhen: "lower",
   },
   {
     label: "Campus days",
-    value: (row) => String(row.campus_days),
-    raw: (row) => row.campus_days,
-    lowerIsBetter: true,
+    value: (row) => String(row.physical_days),
+    raw: (row) => row.physical_days,
+    betterWhen: "lower",
   },
   {
-    label: "Late-only days",
-    value: (row) => String(row.late_only_days),
-    raw: (row) => row.late_only_days,
-    lowerIsBetter: true,
+    label: "Empty days",
+    value: (row) => String(row.empty_days),
+    raw: (row) => row.empty_days,
+    betterWhen: "higher",
   },
   {
-    label: "Early-only days",
-    value: (row) => String(row.early_only_days),
-    raw: (row) => row.early_only_days,
-    lowerIsBetter: true,
-  },
-  {
-    label: "One-hour-only trips",
-    value: (row) => String(row.one_hour_only_days),
-    raw: (row) => row.one_hour_only_days,
-    lowerIsBetter: true,
-  },
-  {
-    label: "Overloaded days",
-    value: (row) => String(row.overloaded_days),
-    raw: (row) => row.overloaded_days,
-    lowerIsBetter: true,
+    label: "Physical teaching time",
+    value: (row) => formatMinutes(row.total_physical_teaching_minutes),
+    raw: (row) => row.total_physical_teaching_minutes,
+    betterWhen: "neutral",
   },
   {
     label: "Teaching time",
     value: (row) => formatMinutes(row.total_teaching_minutes),
     raw: (row) => row.total_teaching_minutes,
-    lowerIsBetter: false,
+    betterWhen: "neutral",
   },
 ];
 
@@ -523,10 +508,11 @@ export function Dashboard({
     studyMode: "",
     deliveryMode: "",
   });
-  const [criterionOrder, setCriterionOrder] = useState<CriterionKey[]>(
-    data.scoring.default_criterion_order,
+  const [timePreference, setTimePreference] = useState(
+    data.scoring.default_time_preference,
   );
-  const [equalWeight, setEqualWeight] = useState(false);
+  const [emphasizeShortDays, setEmphasizeShortDays] = useState(false);
+  const [emphasizeLongDays, setEmphasizeLongDays] = useState(false);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDirection, setSortDirection] =
@@ -541,10 +527,11 @@ export function Dashboard({
     () => new Map(data.intakes.map((intake) => [intake.intake_code, intake])),
     [data.intakes],
   );
-  const dailyByVariant = useMemo(
-    () => groupByVariant(data.dailyMetrics),
-    [data.dailyMetrics],
+  const scoringContext = useMemo(
+    () => createScoringContext(data.dailyMetrics, data.timetableBlocks),
+    [data.dailyMetrics, data.timetableBlocks],
   );
+  const dailyByVariant = scoringContext.dailyByVariant;
   const blocksByVariant = useMemo(
     () => groupByVariant(data.timetableBlocks),
     [data.timetableBlocks],
@@ -557,16 +544,13 @@ export function Dashboard({
     () => filterWeeklyMetrics(data.weeklyMetrics, intakeByCode, filters),
     [data.weeklyMetrics, filters, intakeByCode],
   );
-  const rankingWeights = useMemo(
-    () =>
-      equalWeight
-        ? criterionOrder.map(() => 1)
-        : data.scoring.position_weights.slice(0, criterionOrder.length),
-    [criterionOrder, data.scoring.position_weights, equalWeight],
+  const scoringPreferences = useMemo<ScoringPreferences>(
+    () => ({ timePreference, emphasizeShortDays, emphasizeLongDays }),
+    [timePreference, emphasizeShortDays, emphasizeLongDays],
   );
   const rankedRows = useMemo(
-    () => rankVariants(peerRows, criterionOrder, rankingWeights),
-    [criterionOrder, peerRows, rankingWeights],
+    () => rankVariants(peerRows, data.scoring, scoringPreferences, scoringContext),
+    [peerRows, data.scoring, scoringPreferences, scoringContext],
   );
   const bestRows = useMemo(
     () =>
@@ -663,10 +647,6 @@ export function Dashboard({
     meta: `${formatNumber(week.variant_count)} variants`,
   }));
   const activeFilterKeys = FILTER_KEYS.filter((key) => filters[key]);
-  const inactiveCriteria = CRITERION_KEYS.filter(
-    (criterion) => !criterionOrder.includes(criterion),
-  );
-  const weightTotal = rankingWeights.reduce((total, weight) => total + weight, 0);
 
   useEffect(() => {
     setPage(1);
@@ -716,19 +696,10 @@ export function Dashboard({
     });
   }
 
-  function moveCriterion(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= criterionOrder.length) return;
-    setCriterionOrder((current) => {
-      const next = [...current];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
-
   function resetRankingRecipe() {
-    setCriterionOrder([...data.scoring.default_criterion_order]);
-    setEqualWeight(false);
+    setTimePreference(data.scoring.default_time_preference);
+    setEmphasizeShortDays(false);
+    setEmphasizeLongDays(false);
   }
 
   function handleSort(key: SortKey) {
@@ -804,7 +775,8 @@ export function Dashboard({
             <p className="db-kicker" style={{ fontSize: "16px" }}>APU Timetable Analyzer</p>
             <h1 id="db-title">Dashboard</h1>
             <p>
-              Directly compare timetables based on your own configurations.
+              Choose when classes should happen, compare absolute scores, and
+              see how each timetable ranks in a fair group.
             </p>
           </div>
           <dl className="db-hero-stats">
@@ -818,10 +790,14 @@ export function Dashboard({
               <dd>{formatNumber(new Set(rankedRows.map((row) => row.intake_code)).size)}</dd>
               <small>after smart filters</small>
             </div>
-            <div>
-              <dt>Active criteria</dt>
-              <dd>{criterionOrder.length}</dd>
-              <small>{equalWeight ? "equal influence" : "ranked influence"}</small>
+            <div className="db-hero-time-stat">
+              <dt>Preferred time</dt>
+              <dd className="db-hero-time-value">
+                {data.scoring.time_preferences.find(
+                  (preference) => preference.key === timePreference,
+                )?.short_label ?? "Midday"}
+              </dd>
+              <small>{emphasizeShortDays || emphasizeLongDays ? "personal emphasis on" : "balanced recipe"}</small>
             </div>
           </dl>
         </section>
@@ -833,7 +809,7 @@ export function Dashboard({
               <div>
                 <span>Comparison pool</span>
                 <h2>Timetable Filter</h2>
-                <p>Choose which timetables will be considered in the ranking.</p>
+                <p>Choose the group used for ranking. These filters do not change a timetable's score.</p>
               </div>
               <button className="db-reset-button" type="button" onClick={resetFilters}>
                 Reset pool
@@ -980,10 +956,9 @@ export function Dashboard({
             <header className="db-control-heading">
               <div className="db-step-number" aria-hidden="true">02</div>
               <div>
-                <span>Ranking configuration</span>
-                <h2>Frustration Filter</h2>
-                <p>Rerank or remove frustration points.</p>
-                <br></br>
+                <span>Scoring preferences</span>
+                <h2>Convenience Recipe</h2>
+                <p>Move the ideal time band, then add optional personal emphasis.</p>
               </div>
               <button
                 className="db-reset-button"
@@ -994,80 +969,66 @@ export function Dashboard({
               </button>
             </header>
 
-            <ol className="db-priority-list" aria-label="Frustration priority order">
-              {criterionOrder.map((criterion, index) => (
-                <li key={criterion}>
-                  <span className="db-priority-position">{index + 1}</span>
-                  <span className="db-priority-copy">
-                    <strong>{CRITERION_DETAILS[criterion].label}</strong>
-                    <small>
-                      {equalWeight
-                        ? "Equal weight"
-                        : `${weightTotal > 0 ? ((rankingWeights[index] / weightTotal) * 100).toFixed(1) : "0.0"}% influence`}
-                    </small>
-                  </span>
-                  <span className="db-priority-actions">
-                    <button
-                      type="button"
-                      disabled={index === 0}
-                      aria-label={`Move ${CRITERION_DETAILS[criterion].label} up`}
-                      onClick={() => moveCriterion(index, -1)}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      disabled={index === criterionOrder.length - 1}
-                      aria-label={`Move ${CRITERION_DETAILS[criterion].label} down`}
-                      onClick={() => moveCriterion(index, 1)}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      className="is-remove"
-                      type="button"
-                      aria-label={`Remove ${CRITERION_DETAILS[criterion].label}`}
-                      onClick={() =>
-                        setCriterionOrder((current) =>
-                          current.filter((item) => item !== criterion),
-                        )
-                      }
-                    >
-                      ×
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ol>
-
-            {inactiveCriteria.length > 0 && (
-              <div className="db-restore-criteria">
-                <span>Removed</span>
-                {inactiveCriteria.map((criterion) => (
-                  <button
-                    type="button"
-                    key={criterion}
-                    onClick={() =>
-                      setCriterionOrder((current) => [...current, criterion])
-                    }
+            <fieldset className="db-time-fieldset">
+              <legend>Preferred physical class time</legend>
+              <div className="db-time-options">
+                {data.scoring.time_preferences.map((preference) => (
+                  <label
+                    className={preference.key === timePreference ? "is-selected" : ""}
+                    key={preference.key}
                   >
-                    + {CRITERION_DETAILS[criterion].shortLabel}
-                  </button>
+                    <input
+                      type="radio"
+                      name="dashboard-time-preference"
+                      checked={preference.key === timePreference}
+                      onChange={() => setTimePreference(preference.key)}
+                    />
+                    <span aria-hidden="true" />
+                    <strong>{preference.short_label}</strong>
+                    <small>{preference.start} to {preference.end}</small>
+                  </label>
                 ))}
               </div>
-            )}
+            </fieldset>
 
-            <label className="db-equal-toggle">
-              <input
-                type="checkbox"
-                checked={equalWeight}
-                disabled={criterionOrder.length === 0}
-                onChange={(event) => setEqualWeight(event.target.checked)}
-              />
-              <span aria-hidden="true" />
-              <strong>Treat everything equally</strong>
-              <small>Turns off priority weighting without removing any criteria.</small>
-            </label>
+            <div className="db-model-strip" aria-label="Fixed daily scoring recipe">
+              <span>Fixed daily recipe</span>
+              <div>
+                <b>20 <small>trip</small></b>
+                <b>30 <small>placement</small></b>
+                <b>20 <small>span</small></b>
+                <b>10 <small>waiting</small></b>
+                <b>10 <small>short</small></b>
+                <b>10 <small>heavy</small></b>
+              </div>
+              <p>Empty day 0, online-only day 5 to 19, physical day 20 to 100.</p>
+            </div>
+
+            <fieldset className="db-emphasis-fieldset">
+              <legend>Optional personal emphasis</legend>
+              <div className="db-emphasis-grid">
+                <label className={emphasizeShortDays ? "is-selected" : ""}>
+                  <input
+                    type="checkbox"
+                    checked={emphasizeShortDays}
+                    onChange={(event) => setEmphasizeShortDays(event.target.checked)}
+                  />
+                  <span aria-hidden="true" />
+                  <strong>Avoid short campus trips</strong>
+                  <small>Adds 5 raw weight points within the same 100-point cap.</small>
+                </label>
+                <label className={emphasizeLongDays ? "is-selected" : ""}>
+                  <input
+                    type="checkbox"
+                    checked={emphasizeLongDays}
+                    onChange={(event) => setEmphasizeLongDays(event.target.checked)}
+                  />
+                  <span aria-hidden="true" />
+                  <strong>Avoid heavy teaching days</strong>
+                  <small>Adds 5 raw weight points within the same 100-point cap.</small>
+                </label>
+              </div>
+            </fieldset>
           </article>
         </section>
 
@@ -1211,8 +1172,8 @@ export function Dashboard({
                                 <SortHeader label="Position" sortKey="rank" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                                 <SortHeader label="Timetable" sortKey="intake" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                                 <SortHeader label="Score" sortKey="score" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
-                                <SortHeader label="Campus waiting" sortKey="gap" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
-                                <SortHeader label="Campus days" sortKey="campusDays" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
+                                <SortHeader label="Campus waiting" sortKey="waiting" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
+                                <SortHeader label="Physical days" sortKey="physicalDays" activeKey={sortKey} direction={sortDirection} onSort={handleSort} />
                                 <th>Biggest score driver</th>
                                 <th><span className="db-sr-only">Actions</span></th>
                               </tr>
@@ -1220,7 +1181,7 @@ export function Dashboard({
                             <tbody>
                               {pageRows.map((row) => {
                                 const intake = intakeByCode.get(row.intake_code) ?? null;
-                                const driver = strongestCriterion(row, criterionOrder);
+                                const driver = strongestComponent(row);
                                 return (
                                   <tr
                                     className={row.variant_index === selected?.variant_index ? "is-selected" : ""}
@@ -1236,17 +1197,11 @@ export function Dashboard({
                                       <small>{programmeTitle(intake)}</small>
                                     </th>
                                     <td className="db-score-cell">{formatScore(row.recalculatedScore)}</td>
-                                    <td>{formatMinutes(row.total_gap_minutes)}</td>
-                                    <td>{row.campus_days}</td>
+                                    <td>{formatMinutes(row.total_campus_waiting_minutes)}</td>
+                                    <td>{row.physical_days}</td>
                                     <td className="db-driver-cell">
-                                      {driver ? (
-                                        <>
-                                          <strong>{CRITERION_DETAILS[driver].shortLabel}</strong>
-                                          <small>{criterionValue(driver, row.components[driver].raw)}</small>
-                                        </>
-                                      ) : (
-                                        <span>Ranking criteria removed</span>
-                                      )}
+                                      <strong>{COMPONENT_DETAILS[driver].shortLabel}</strong>
+                                      <small>{componentValue(driver, row.components[driver].raw)}</small>
                                     </td>
                                     <td className="db-row-actions">
                                       <button type="button" onClick={() => inspectVariant(row.variant_index)}>
@@ -1339,33 +1294,29 @@ export function Dashboard({
                   <span aria-hidden="true">~</span>
                   <div>
                     <strong>
-                      {selected.total_gap_minutes > 0
-                        ? "Campus waiting has the clearest visible impact."
-                        : "This week avoids long campus waits."}
+                      {COMPONENT_DETAILS[strongestComponent(selected)].label} has the clearest impact.
                     </strong>
                     <p>
-                      {strongestCriterion(selected, criterionOrder)
-                        ? `Biggest score driver: ${CRITERION_DETAILS[strongestCriterion(selected, criterionOrder)!].label.toLowerCase()}.`
-                        : "No frustration criteria are active."}
+                      The absolute score is stable. Filters only change the comparison rank.
                     </p>
                   </div>
                 </div>
                 <div>
-                  <span>WEIGHTED SCORE</span>
+                  <span>WEEKLY SCORE</span>
                   <strong className="db-score-total">
                     {formatScore(selected.recalculatedScore)}<small>/100</small>
                   </strong>
                   <small>lower is better</small>
                 </div>
-                <div><span>CAMPUS WAITING</span><strong>{formatMinutes(selected.total_gap_minutes)}</strong><small>across the week</small></div>
-                <div><span>CAMPUS DAYS</span><strong>{selected.campus_days}</strong><small>{formatMinutes(selected.total_teaching_minutes)} teaching</small></div>
+                <div><span>CAMPUS WAITING</span><strong>{formatMinutes(selected.total_campus_waiting_minutes)}</strong><small>across the week</small></div>
+                <div><span>PHYSICAL DAYS</span><strong>{selected.physical_days}</strong><small>{selected.empty_days} empty days</small></div>
               </section>
 
               <section className="db-timetable-section" aria-labelledby="db-timetable-title">
                 <header className="db-section-heading">
                   <div>
                     <span>Vertical week view</span>
-                    <h3 id="db-timetable-title">See exactly where the frustration comes from.</h3>
+                    <h3 id="db-timetable-title">See exactly where the score comes from.</h3>
                     <p>Days run across the top. Time runs down the left.</p>
                   </div>
                   <div className="tn-chart-legend" aria-label="Timetable legend">
@@ -1391,35 +1342,29 @@ export function Dashboard({
                   <div>
                     <span>Score explanation</span>
                     <h3 id="db-score-title">How this timetable reached {formatScore(selected.recalculatedScore)}.</h3>
-                    <p>Each active frustration is measured against the current comparison pool.</p>
+                    <p>Each day is scored on the same absolute scale, then all seven days are averaged.</p>
                   </div>
                 </header>
-                {criterionOrder.length === 0 ? (
-                  <div className="db-score-empty">Restore a frustration criterion to rebuild the score.</div>
-                ) : (
-                  <div className="db-table-scroll" tabIndex={0}>
-                    <table className="db-score-table">
-                      <thead>
-                        <tr><th>Priority</th><th>Frustration</th><th>Your value</th><th>Peer percentile</th><th>Weight</th><th>Score impact</th></tr>
-                      </thead>
-                      <tbody>
-                        {criterionOrder.map((criterion, index) => {
-                          const component = selected.components[criterion];
-                          return (
-                            <tr key={criterion}>
-                              <td>{equalWeight ? "=" : index + 1}</td>
-                              <th scope="row">{CRITERION_DETAILS[criterion].label}</th>
-                              <td>{criterionValue(criterion, component.raw)}</td>
-                              <td>{formatScore(component.percentile)}%</td>
-                              <td>{(component.weight * 100).toFixed(1)}%</td>
-                              <td>{formatScore(component.contribution)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                <div className="db-table-scroll" tabIndex={0}>
+                  <table className="db-score-table">
+                    <thead>
+                      <tr><th>Component</th><th>Week measurement</th><th>Daily cap</th><th>Score impact</th></tr>
+                    </thead>
+                    <tbody>
+                      {SCORING_COMPONENT_KEYS.map((componentKey) => {
+                        const component = selected.components[componentKey];
+                        return (
+                          <tr key={componentKey}>
+                            <th scope="row">{COMPONENT_DETAILS[componentKey].label}</th>
+                            <td>{componentValue(componentKey, component.raw)}</td>
+                            <td>{formatScore(component.dailyCap)}</td>
+                            <td>{formatScore(component.contribution)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </section>
             </div>
           )}
@@ -1503,8 +1448,14 @@ export function Dashboard({
                     {COMPARISON_METRICS.map((metric) => {
                       const leftRaw = metric.raw(comparisonLeft);
                       const rightRaw = metric.raw(comparisonRight);
-                      const leftBetter = metric.lowerIsBetter && leftRaw < rightRaw;
-                      const rightBetter = metric.lowerIsBetter && rightRaw < leftRaw;
+                      const leftBetter =
+                        metric.betterWhen === "lower"
+                          ? leftRaw < rightRaw
+                          : metric.betterWhen === "higher" && leftRaw > rightRaw;
+                      const rightBetter =
+                        metric.betterWhen === "lower"
+                          ? rightRaw < leftRaw
+                          : metric.betterWhen === "higher" && rightRaw > leftRaw;
                       return (
                         <tr key={metric.label}>
                           <th scope="row">{metric.label}</th>

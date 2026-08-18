@@ -10,7 +10,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { Dashboard, scheduleBlocksWithGaps } from "./App";
 import { parseDashboardData } from "./data";
-import { filterWeeklyMetrics, rankVariants } from "./ranking";
+import {
+  createScoringContext,
+  filterWeeklyMetrics,
+  rankVariants,
+} from "./ranking";
 import type { TimetableBlock } from "./types";
 
 afterEach(cleanup);
@@ -116,6 +120,12 @@ describe("Campus-bound gap markers", () => {
 describe("Dashboard MVP", () => {
   it("reproduces every exported default ranking across all weeks", () => {
     const data = loadRealDashboardData();
+    const context = createScoringContext(data.dailyMetrics, data.timetableBlocks);
+    const preferences = {
+      timePreference: data.scoring.default_time_preference,
+      emphasizeShortDays: false,
+      emphasizeLongDays: false,
+    };
 
     for (const week of data.weeks) {
       const exported = data.weeklyMetrics.filter(
@@ -123,12 +133,13 @@ describe("Dashboard MVP", () => {
       );
       const recalculated = rankVariants(
         exported,
-        data.scoring.default_criterion_order,
-        data.scoring.position_weights,
+        data.scoring,
+        preferences,
+        context,
       );
 
       for (const row of recalculated) {
-        expect(row.recalculatedScore).toBe(row.overall_frustration);
+        expect(row.recalculatedScore).toBeCloseTo(row.overall_score, 5);
         expect(row.recalculatedBestRank).toBe(row.best_rank);
         expect(row.recalculatedWorstRank).toBe(row.worst_rank);
         expect(row.recalculatedIsBest).toBe(row.is_best);
@@ -142,8 +153,17 @@ describe("Dashboard MVP", () => {
     const data = loadRealDashboardData();
     expect(data.filters.courses.every((option) => option.name)).toBe(true);
     expect(data.filters.specialisms.every((option) => option.name)).toBe(true);
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+    const defaultWeek = data.weeks.find(
+      (week) => week.week_start <= today && today <= week.week_end,
+    )?.week_start ?? data.weeks[0].week_start;
     const defaultPeerCount = data.weeklyMetrics.filter(
-      (row) => row.week_start === "2026-08-10",
+      (row) => row.week_start === defaultWeek,
     ).length;
     const user = userEvent.setup();
     render(<Dashboard data={data} />);
@@ -207,13 +227,11 @@ describe("Dashboard MVP", () => {
       }),
     ).toBeNull();
 
-    await user.click(screen.getByLabelText("Move Gap burden down"));
-    const priorities = screen.getByRole("list", {
-      name: "Frustration priority order",
+    const afternoonPreference = screen.getByRole("radio", {
+      name: /Afternoon.*13:30 to 16:00/i,
     });
-    expect(within(priorities).getAllByRole("listitem")[0].textContent).toContain(
-      "Late-only campus days",
-    );
+    await user.click(afternoonPreference);
+    expect(afternoonPreference).toHaveProperty("checked", true);
 
     const intakeByCode = new Map(
       data.intakes.map((intake) => [intake.intake_code, intake]),
@@ -222,7 +240,7 @@ describe("Dashboard MVP", () => {
       data.weeklyMetrics,
       intakeByCode,
       {
-        weekStart: "2026-08-10",
+        weekStart: defaultWeek,
         grouping: "",
         programmeLevel: "",
         programmeRoute: "",
@@ -239,7 +257,7 @@ describe("Dashboard MVP", () => {
       data.weeklyMetrics,
       intakeByCode,
       {
-        weekStart: "2026-08-10",
+        weekStart: defaultWeek,
         grouping: "",
         programmeLevel: "foundation",
         programmeRoute: "",

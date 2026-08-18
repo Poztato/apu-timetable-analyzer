@@ -13,14 +13,15 @@ import {
 import { buildSmartFilterOptions } from "./Dashboard";
 import { parseDashboardData } from "./data";
 import {
-  CRITERION_KEYS,
+  createScoringContext,
   filterWeeklyMetrics,
   rankVariants,
   summarizeRankPosition,
   type FilterState,
+  type ScoringContext,
+  type ScoringPreferences,
 } from "./ranking";
 import type {
-  CriterionKey,
   DashboardData,
   IntakeMetadata,
   WeeklyMetric,
@@ -42,6 +43,7 @@ type FilterKey = (typeof FILTER_KEYS)[number];
 
 let data: DashboardData;
 let intakeByCode: Map<string, IntakeMetadata>;
+let scoringContext: ScoringContext;
 
 beforeAll(() => {
   const path = resolve(process.cwd(), "public/data/latest.json");
@@ -51,6 +53,7 @@ beforeAll(() => {
   intakeByCode = new Map(
     data.intakes.map((intake) => [intake.intake_code, intake]),
   );
+  scoringContext = createScoringContext(data.dailyMetrics, data.timetableBlocks);
 });
 
 function emptyFilters(weekStart: string): FilterState {
@@ -98,8 +101,8 @@ function rowFilters(row: WeeklyMetric, intake: IntakeMetadata): FilterState {
   };
 }
 
-function expectValidRanks(rows: WeeklyMetric[], criteria: CriterionKey[], weights: number[]) {
-  const ranked = rankVariants(rows, criteria, weights);
+function expectValidRanks(rows: WeeklyMetric[], preferences: ScoringPreferences) {
+  const ranked = rankVariants(rows, data.scoring, preferences, scoringContext);
   const frequencies = new Map<number, number>();
   for (const row of ranked) {
     frequencies.set(
@@ -331,22 +334,14 @@ describe("dashboard and checker filter audit", () => {
     }
   });
 
-  it("maintains valid ranks under every filter and ranking mode", () => {
-    const recipes: Array<{ criteria: CriterionKey[]; weights: number[] }> = [
-      {
-        criteria: data.scoring.default_criterion_order,
-        weights: data.scoring.position_weights,
-      },
-      {
-        criteria: [...data.scoring.default_criterion_order].reverse(),
-        weights: data.scoring.position_weights,
-      },
-      { criteria: [...CRITERION_KEYS], weights: CRITERION_KEYS.map(() => 1) },
-      ...CRITERION_KEYS.map((criterion) => ({
-        criteria: [criterion],
-        weights: [1],
-      })),
-      { criteria: [], weights: [] },
+  it("maintains valid ranks under every filter and preference mode", () => {
+    const recipes: ScoringPreferences[] = [
+      { timePreference: "balanced", emphasizeShortDays: false, emphasizeLongDays: false },
+      { timePreference: "morning", emphasizeShortDays: false, emphasizeLongDays: false },
+      { timePreference: "afternoon", emphasizeShortDays: false, emphasizeLongDays: false },
+      { timePreference: "balanced", emphasizeShortDays: true, emphasizeLongDays: false },
+      { timePreference: "balanced", emphasizeShortDays: false, emphasizeLongDays: true },
+      { timePreference: "balanced", emphasizeShortDays: true, emphasizeLongDays: true },
     ];
 
     for (const week of data.weeks) {
@@ -366,7 +361,7 @@ describe("dashboard and checker filter audit", () => {
 
       for (const peers of peerSets) {
         for (const recipe of recipes) {
-          expectValidRanks(peers, recipe.criteria, recipe.weights);
+          expectValidRanks(peers, recipe);
         }
       }
     }
@@ -377,7 +372,12 @@ describe("dashboard and checker filter audit", () => {
     const weekRows = data.weeklyMetrics.filter(
       (row) => row.week_start === weekStart,
     );
-    const ranked = rankVariants(weekRows, ["gap_burden"], [1]);
+    const ranked = rankVariants(
+      weekRows,
+      data.scoring,
+      { timePreference: "balanced", emphasizeShortDays: false, emphasizeLongDays: false },
+      scoringContext,
+    );
     const target = ranked.find(
       (row) => row.intake_code === "APU2F2602CS(DF)",
     );
@@ -387,7 +387,7 @@ describe("dashboard and checker filter audit", () => {
 
     expect(target).toBeDefined();
     expect(twin).toBeDefined();
-    expect(target!.total_gap_minutes).toBe(1275);
+    expect(target!.total_campus_waiting_minutes).toBe(1275);
     expect(target!.recalculatedScore).toBe(twin!.recalculatedScore);
     expect(target!.recalculatedIsWorst).toBe(true);
     expect(summarizeRankPosition(target!)).toMatchObject({

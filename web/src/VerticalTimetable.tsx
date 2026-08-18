@@ -67,18 +67,18 @@ export function scheduleBlocksWithGaps(
   const sorted = [...blocks].sort(
     (left, right) => Date.parse(left.start_at) - Date.parse(right.start_at),
   );
-  const campusBlocks = sorted.filter(
-    (block) => block.delivery_mode === "campus",
+  const physicalBlocks = sorted.filter(
+    (block) => block.delivery_mode !== "online",
   );
-  if (campusBlocks.length < 2) {
+  if (physicalBlocks.length < 2) {
     return sorted.map((block) => ({ block, gapBefore: 0 }));
   }
 
   const campusWindowStart = Math.min(
-    ...campusBlocks.map((block) => Date.parse(block.start_at)),
+    ...physicalBlocks.map((block) => Date.parse(block.start_at)),
   );
   const campusWindowEnd = Math.max(
-    ...campusBlocks.map((block) => Date.parse(block.end_at)),
+    ...physicalBlocks.map((block) => Date.parse(block.end_at)),
   );
   let occupiedUntil: number | null = null;
   return sorted.map((block) => {
@@ -105,11 +105,11 @@ export function scheduleBlocksWithGaps(
 function dayFlags(day: DailyMetric | undefined): string[] {
   if (!day) return [];
   const flags: string[] = [];
-  if (day.total_gap_minutes > 0) flags.push("Gaps");
-  if (day.early_only_flag) flags.push("Early");
-  if (day.late_only_flag) flags.push("Late");
-  if (day.one_hour_only_flag) flags.push("Short trip");
-  if (day.overloaded_flag) flags.push("Overloaded");
+  if (day.campus_waiting_minutes > 0) flags.push("Waiting");
+  if (day.placement_penalty >= 0.5) flags.push("Off-centre");
+  if (day.span_penalty >= 0.5) flags.push("Wide span");
+  if (day.short_day_penalty >= 0.5) flags.push("Short trip");
+  if (day.long_day_penalty >= 0.5) flags.push("Heavy day");
   return flags;
 }
 

@@ -43,7 +43,7 @@ export default function App() {
       <main className="load-state" aria-live="polite">
         <BrandIcon className="load-mark" />
         <h1>Preparing the latest timetables.</h1>
-        <p>The ranking data is being read in your browser.</p>
+        <p>The latest scoring data is being read in your browser.</p>
         <div className="load-lines" aria-hidden="true"><i /><i /><i /></div>
       </main>
     );

@@ -1,11 +1,15 @@
 export type JsonScalar = string | number | boolean | null;
 
-export type CriterionKey =
-  | "gap_burden"
-  | "late_only"
-  | "early_only"
-  | "one_hour_only"
-  | "overloaded";
+export type TimePreferenceKey = "balanced" | "morning" | "afternoon";
+
+export type ScoringComponentKey =
+  | "campus_trip"
+  | "online_commitment"
+  | "placement"
+  | "span"
+  | "waiting"
+  | "short_day"
+  | "long_day";
 
 export interface EncodedTable {
   columns: string[];
@@ -54,27 +58,47 @@ export interface FilterOptions {
   delivery_modes: string[];
 }
 
-export interface CriterionDefinition {
-  key: CriterionKey;
-  metric: string;
-  position_weight: number;
-  normalized_weight: number;
+export interface TimePreferenceDefinition {
+  key: TimePreferenceKey;
+  label: string;
+  short_label: string;
+  start: string;
+  end: string;
+  description: string;
+}
+
+export interface RampDefinition {
+  low: number;
+  high: number;
+  reverse: boolean;
 }
 
 export interface ScoringDefinition {
-  criteria: CriterionDefinition[];
-  default_criterion_order: CriterionKey[];
-  percentile_method: string;
-  position_weights: number[];
-  profile: string;
-  profile_id: string;
-  thresholds: {
-    early_start: string;
-    late_start: string;
-    one_hour_max_teaching_minutes: number;
-    overload_event_count: number;
-    overload_teaching_minutes: number;
+  model_version: string;
+  weekly_divisor_days: number;
+  default_time_preference: TimePreferenceKey;
+  time_preferences: TimePreferenceDefinition[];
+  component_weights: Record<
+    Exclude<ScoringComponentKey, "online_commitment">,
+    number
+  >;
+  emphasis_bonus: {
+    short_day: number;
+    long_day: number;
   };
+  online_day: {
+    base_points: number;
+    span_points: number;
+    load_points: number;
+  };
+  ramps: Record<
+    "placement" | "span" | "waiting" | "short_day" | "long_day",
+    RampDefinition
+  >;
+  profile_id: string;
+  score_method: string;
+  physical_day_minimum: number;
+  online_day_maximum: number;
 }
 
 export interface IntakeMetadata {
@@ -108,32 +132,44 @@ export interface WeeklyMetric {
   elective_status: string;
   elective_rule_id: string;
   active_days: number;
-  campus_days: number;
+  empty_days: number;
+  physical_days: number;
   online_only_days: number;
   weekend_days: number;
   total_event_records: number;
   total_events: number;
   total_merged_blocks: number;
   total_teaching_minutes: number;
-  total_gap_minutes: number;
-  longest_gap_minutes: number;
-  days_with_gaps: number;
+  total_physical_teaching_minutes: number;
+  total_span_minutes: number;
+  total_physical_span_minutes: number;
+  total_campus_waiting_minutes: number;
+  longest_campus_wait_minutes: number;
+  days_with_campus_waiting: number;
+  average_placement_deviation_minutes: number;
   days_with_exact_overlaps: number;
   days_with_overlaps: number;
   exact_overlap_pair_count: number;
   overlap_pair_count: number;
+  total_physical_events: number;
   total_campus_events: number;
   total_online_events: number;
   total_unknown_events: number;
-  early_only_days: number;
-  late_only_days: number;
-  one_hour_only_days: number;
-  overloaded_days: number;
   earliest_start: string;
   latest_end: string;
   maximum_daily_span: number;
+  maximum_physical_span: number;
   maximum_daily_teaching_minutes: number;
-  overall_frustration: number;
+  maximum_physical_teaching_minutes: number;
+  campus_trip_score: number;
+  online_commitment_score: number;
+  placement_score: number;
+  span_score: number;
+  waiting_score: number;
+  short_day_score: number;
+  long_day_score: number;
+  balanced_score: number;
+  overall_score: number;
   comparison_set_size: number;
   comparison_median_score: number;
   distance_from_median: number;
@@ -153,20 +189,36 @@ export interface DailyMetric {
   event_count: number;
   merged_block_count: number;
   teaching_minutes: number;
+  physical_teaching_minutes: number;
   first_class_start: string;
   last_class_end: string;
   span_minutes: number;
-  total_gap_minutes: number;
-  longest_gap_minutes: number;
+  first_physical_start: string | null;
+  last_physical_end: string | null;
+  physical_span_minutes: number;
+  campus_waiting_minutes: number;
+  longest_campus_wait_minutes: number;
+  placement_deviation_minutes: number;
   exact_overlap_pair_count: number;
   overlap_pair_count: number;
+  physical_event_count: number;
   campus_event_count: number;
   online_event_count: number;
   unknown_event_count: number;
-  early_only_flag: boolean;
-  late_only_flag: boolean;
-  one_hour_only_flag: boolean;
-  overloaded_flag: boolean;
+  day_type: "physical" | "online";
+  placement_penalty: number;
+  span_penalty: number;
+  waiting_penalty: number;
+  short_day_penalty: number;
+  long_day_penalty: number;
+  campus_trip_score: number;
+  online_commitment_score: number;
+  placement_score: number;
+  span_score: number;
+  waiting_score: number;
+  short_day_score: number;
+  long_day_score: number;
+  balanced_day_score: number;
 }
 
 export interface TimetableBlock {

@@ -1,7 +1,75 @@
 {
-  "early_start": "09:30",
-  "late_start": "15:00",
-  "one_hour_max_teaching_minutes": 60,
-  "overload_teaching_minutes": 360,
-  "overload_event_count": 4
+  "model_version": "daily_convenience_v1",
+  "weekly_divisor_days": 7,
+  "default_time_preference": "balanced",
+  "time_preferences": [
+    {
+      "key": "balanced",
+      "label": "Balanced midday",
+      "short_label": "Midday",
+      "start": "11:00",
+      "end": "13:30",
+      "description": "Keeps physical teaching close to the middle of the day."
+    },
+    {
+      "key": "morning",
+      "label": "Prefer mornings",
+      "short_label": "Morning",
+      "start": "09:00",
+      "end": "11:30",
+      "description": "Favours physical classes that leave the afternoon clearer."
+    },
+    {
+      "key": "afternoon",
+      "label": "Prefer afternoons",
+      "short_label": "Afternoon",
+      "start": "13:30",
+      "end": "16:00",
+      "description": "Favours physical classes that avoid early starts."
+    }
+  ],
+  "component_weights": {
+    "campus_trip": 20,
+    "placement": 30,
+    "span": 20,
+    "waiting": 10,
+    "short_day": 10,
+    "long_day": 10
+  },
+  "emphasis_bonus": {
+    "short_day": 5,
+    "long_day": 5
+  },
+  "online_day": {
+    "base_points": 5,
+    "span_points": 7,
+    "load_points": 7
+  },
+  "ramps": {
+    "placement": {
+      "low": 0,
+      "high": 240,
+      "reverse": false
+    },
+    "span": {
+      "low": 180,
+      "high": 540,
+      "reverse": false
+    },
+    "waiting": {
+      "low": 0,
+      "high": 180,
+      "reverse": false
+    },
+    "short_day": {
+      "low": 60,
+      "high": 120,
+      "reverse": true
+    },
+    "long_day": {
+      "low": 240,
+      "high": 360,
+      "reverse": false
+    }
+  }
 }

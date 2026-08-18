@@ -3,49 +3,27 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 
 import { BrandIcon } from "./BrandIcon";
 import {
+  COMPONENT_DETAILS,
+  SCORING_COMPONENT_KEYS,
+  createScoringContext,
   rankVariants,
+  strongestComponent,
   summarizeRankPosition,
   type RankedVariant,
+  type ScoringPreferences,
 } from "./ranking";
 import { VerticalTimetable } from "./VerticalTimetable";
-import type {
-  CriterionKey,
-  DailyMetric,
-  DashboardData,
-  IntakeMetadata,
-  TimetableBlock,
-  WeeklyMetric,
-} from "./types";
+import type { DashboardData, IntakeMetadata, ScoringComponentKey, WeeklyMetric } from "./types";
 
 interface IntakeMatch {
   intake: IntakeMetadata;
   score: number;
   kind: "Exact match" | "Strong match" | "Close match" | "Possible match";
-}
-
-interface PrioritySnapshot {
-  criteria: CriterionKey[];
-  equalWeight: boolean;
-  useDefaults: boolean;
-}
-
-interface PointerDrag {
-  criterion: CriterionKey;
-  pointerId: number;
-  left: number;
-  top: number;
-  width: number;
-  offsetX: number;
-  offsetY: number;
-  dropIndex: number;
 }
 
 export type ComparisonScope = "similar" | "level" | "all";
@@ -54,44 +32,12 @@ type Theme = "light" | "dark";
 const JOURNEY = [
   { short: "Find", label: "Find intake" },
   { short: "Config", label: "Configure" },
-  { short: "Priorities", label: "Priorities" },
+  { short: "Preferences", label: "Preferences" },
   { short: "Compare", label: "Compare" },
   { short: "Result", label: "Result" },
 ] as const;
 
-const CRITERION_COPY: Record<
-  CriterionKey,
-  { title: string; description: string; tone: string }
-> = {
-  gap_burden: {
-    title: "Long gaps between classes",
-    description: "Waiting on campus between one class and the next.",
-    tone: "gap",
-  },
-  late_only: {
-    title: "Late-only campus days",
-    description: "Travelling in only for classes that finish late.",
-    tone: "late",
-  },
-  early_only: {
-    title: "Early-only campus days",
-    description: "Starting early when there is nothing else that day.",
-    tone: "early",
-  },
-  one_hour_only: {
-    title: "One-hour-only campus trips",
-    description: "Making the commute for very little teaching time.",
-    tone: "short",
-  },
-  overloaded: {
-    title: "Overloaded days",
-    description: "Too many teaching hours packed into one day.",
-    tone: "overload",
-  },
-};
-
 const NO_ELECTIVE_STATUSES = new Set(["no_electives", "not_active"]);
-const MAX_PRIORITY_HISTORY = 30;
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-MY").format(value);
@@ -108,9 +54,19 @@ function formatScore(value: number): string {
   return value.toFixed(2);
 }
 
-function formatCriterionValue(criterion: CriterionKey, value: number): string {
-  if (criterion === "gap_burden") return formatMinutes(value);
-  return `${value} ${value === 1 ? "day" : "days"}`;
+function formatComponentValue(
+  component: ScoringComponentKey,
+  value: number,
+): string {
+  if (
+    component === "campus_trip" ||
+    component === "online_commitment" ||
+    component === "short_day" ||
+    component === "long_day"
+  ) {
+    return `${value} ${value === 1 ? "day" : "days"}`;
+  }
+  return formatMinutes(Math.round(value));
 }
 
 function formatWeekDate(value: string): string {
@@ -279,17 +235,6 @@ export function rankIntakeMatches(
     }));
 }
 
-function prioritySnapshotEqual(
-  left: PrioritySnapshot,
-  right: PrioritySnapshot,
-): boolean {
-  return (
-    left.equalWeight === right.equalWeight &&
-    left.useDefaults === right.useDefaults &&
-    left.criteria.join("|") === right.criteria.join("|")
-  );
-}
-
 function isResolvedElective(row: WeeklyMetric): boolean {
   return row.elective_status === "resolved" || row.elective_status === "fixed";
 }
@@ -344,10 +289,6 @@ export function CampusNotebook({
   onOpenDashboard: () => void;
 }) {
   const defaultWeek = useMemo(() => chooseCurrentWeek(data), [data]);
-  const defaultCriteria = useMemo(
-    () => [...data.scoring.default_criterion_order],
-    [data.scoring.default_criterion_order],
-  );
   const [theme, setTheme] = useState<Theme>("light");
   const [step, setStep] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
@@ -359,13 +300,11 @@ export function CampusNotebook({
   const [selectedWeek, setSelectedWeek] = useState(defaultWeek);
   const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
   const [selectedElective, setSelectedElective] = useState<string | null>(null);
-  const [criteria, setCriteria] = useState<CriterionKey[]>(defaultCriteria);
-  const [equalWeight, setEqualWeight] = useState(false);
-  const [useDefaults, setUseDefaults] = useState(true);
-  const [priorityHistory, setPriorityHistory] = useState<PrioritySnapshot[]>([]);
-  const [drag, setDrag] = useState<PointerDrag | null>(null);
-  const dragRef = useRef<PointerDrag | null>(null);
-  const priorityListRef = useRef<HTMLOListElement | null>(null);
+  const [timePreference, setTimePreference] = useState(
+    data.scoring.default_time_preference,
+  );
+  const [emphasizeShortDays, setEmphasizeShortDays] = useState(false);
+  const [emphasizeLongDays, setEmphasizeLongDays] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [scope, setScope] = useState<ComparisonScope>("all");
   const [sameSchool, setSameSchool] = useState(false);
@@ -411,17 +350,13 @@ export function CampusNotebook({
     groupVariants[0] ??
     null;
 
-  const dailyByVariant = useMemo(() => {
-    const grouped = new Map<number, DailyMetric[]>();
-    for (const day of data.dailyMetrics) {
-      const current = grouped.get(day.variant_index) ?? [];
-      current.push(day);
-      grouped.set(day.variant_index, current);
-    }
-    return grouped;
-  }, [data.dailyMetrics]);
+  const scoringContext = useMemo(
+    () => createScoringContext(data.dailyMetrics, data.timetableBlocks),
+    [data.dailyMetrics, data.timetableBlocks],
+  );
+  const dailyByVariant = scoringContext.dailyByVariant;
   const blocksByVariant = useMemo(() => {
-    const grouped = new Map<number, TimetableBlock[]>();
+    const grouped = new Map<number, typeof data.timetableBlocks>();
     for (const block of data.timetableBlocks) {
       const current = grouped.get(block.variant_index) ?? [];
       current.push(block);
@@ -443,16 +378,17 @@ export function CampusNotebook({
       sameSchool,
     );
   }, [rowsForWeek, selectedIntake, intakeByCode, scope, sameSchool]);
-  const activeWeights = useMemo(
-    () =>
-      equalWeight
-        ? criteria.map(() => 1)
-        : data.scoring.position_weights.slice(0, criteria.length),
-    [criteria, equalWeight, data.scoring.position_weights],
+  const scoringPreferences = useMemo<ScoringPreferences>(
+    () => ({
+      timePreference,
+      emphasizeShortDays,
+      emphasizeLongDays,
+    }),
+    [timePreference, emphasizeShortDays, emphasizeLongDays],
   );
   const rankedRows = useMemo(
-    () => rankVariants(peerRows, criteria, activeWeights),
-    [peerRows, criteria, activeWeights],
+    () => rankVariants(peerRows, data.scoring, scoringPreferences, scoringContext),
+    [peerRows, data.scoring, scoringPreferences, scoringContext],
   );
   const resultRow = selectedVariant
     ? rankedRows.find(
@@ -582,225 +518,6 @@ export function CampusNotebook({
     }
   }
 
-  function currentPrioritySnapshot(): PrioritySnapshot {
-    return {
-      criteria: [...criteria],
-      equalWeight,
-      useDefaults,
-    };
-  }
-
-  function commitPriority(next: PrioritySnapshot) {
-    const current = currentPrioritySnapshot();
-    if (prioritySnapshotEqual(current, next)) return;
-    setPriorityHistory((history) =>
-      [...history, current].slice(-MAX_PRIORITY_HISTORY),
-    );
-    setCriteria([...next.criteria]);
-    setEqualWeight(next.equalWeight);
-    setUseDefaults(next.useDefaults);
-  }
-
-  function moveCriterion(criterion: CriterionKey, direction: -1 | 1) {
-    const index = criteria.indexOf(criterion);
-    const target = index + direction;
-    if (index < 0 || target < 0 || target >= criteria.length || equalWeight) return;
-    const next = [...criteria];
-    [next[index], next[target]] = [next[target], next[index]];
-    commitPriority({ criteria: next, equalWeight: false, useDefaults: false });
-  }
-
-  function removeCriterion(criterion: CriterionKey) {
-    commitPriority({
-      criteria: criteria.filter((item) => item !== criterion),
-      equalWeight,
-      useDefaults: false,
-    });
-    showToast(`${CRITERION_COPY[criterion].title} removed.`);
-  }
-
-  function undoPriority() {
-    const previous = priorityHistory.at(-1);
-    if (!previous) return;
-    setPriorityHistory((history) => history.slice(0, -1));
-    setCriteria([...previous.criteria]);
-    setEqualWeight(previous.equalWeight);
-    setUseDefaults(previous.useDefaults);
-    showToast("Last priority change undone.");
-  }
-
-  function restoreDefaults(checked: boolean) {
-    if (!checked) {
-      commitPriority({ criteria, equalWeight, useDefaults: false });
-      return;
-    }
-    commitPriority({
-      criteria: [...defaultCriteria],
-      equalWeight: false,
-      useDefaults: true,
-    });
-  }
-
-  function beginPointerDrag(
-    event: ReactPointerEvent<HTMLLIElement>,
-    criterion: CriterionKey,
-  ) {
-    const target = event.target as Element;
-    if (
-      equalWeight ||
-      (event.pointerType === "mouse" && event.button !== 0) ||
-      target.closest("button")
-    ) {
-      return;
-    }
-    event.preventDefault();
-    const card = event.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const initial: PointerDrag = {
-      criterion,
-      pointerId: event.pointerId,
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top,
-      dropIndex: criteria.indexOf(criterion),
-    };
-    dragRef.current = initial;
-    setDrag(initial);
-    document.body.classList.add("tn-is-pointer-dragging");
-
-    const handleMove = (pointerEvent: PointerEvent) => {
-      const current = dragRef.current;
-      if (!current || pointerEvent.pointerId !== current.pointerId) return;
-      pointerEvent.preventDefault();
-      const cards = Array.from(
-        priorityListRef.current?.querySelectorAll<HTMLElement>(
-          "[data-priority-card]:not([data-drag-placeholder])",
-        ) ?? [],
-      );
-      let dropIndex = cards.length;
-      for (let index = 0; index < cards.length; index += 1) {
-        const candidate = cards[index].getBoundingClientRect();
-        if (pointerEvent.clientY < candidate.top + candidate.height / 2) {
-          dropIndex = index;
-          break;
-        }
-      }
-      const next = {
-        ...current,
-        left: pointerEvent.clientX - current.offsetX,
-        top: pointerEvent.clientY - current.offsetY,
-        dropIndex,
-      };
-      dragRef.current = next;
-      setDrag(next);
-      if (pointerEvent.clientY < 90) window.scrollBy({ top: -14 });
-      if (pointerEvent.clientY > window.innerHeight - 70) {
-        window.scrollBy({ top: 14 });
-      }
-    };
-
-    const finishDrag = (pointerEvent: PointerEvent) => {
-      const current = dragRef.current;
-      if (!current || pointerEvent.pointerId !== current.pointerId) return;
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", finishDrag);
-      window.removeEventListener("pointercancel", cancelDrag);
-      document.body.classList.remove("tn-is-pointer-dragging");
-      const remaining = criteria.filter((item) => item !== current.criterion);
-      remaining.splice(current.dropIndex, 0, current.criterion);
-      dragRef.current = null;
-      setDrag(null);
-      commitPriority({
-        criteria: remaining,
-        equalWeight: false,
-        useDefaults: false,
-      });
-    };
-
-    const cancelDrag = (pointerEvent: PointerEvent) => {
-      if (pointerEvent.pointerId !== dragRef.current?.pointerId) return;
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", finishDrag);
-      window.removeEventListener("pointercancel", cancelDrag);
-      document.body.classList.remove("tn-is-pointer-dragging");
-      dragRef.current = null;
-      setDrag(null);
-    };
-
-    window.addEventListener("pointermove", handleMove, { passive: false });
-    window.addEventListener("pointerup", finishDrag);
-    window.addEventListener("pointercancel", cancelDrag);
-  }
-
-  function renderPriorityCard(
-    criterion: CriterionKey,
-    index: number,
-    overlay = false,
-  ) {
-    const copy = CRITERION_COPY[criterion];
-    const influence = equalWeight
-      ? "Equal influence"
-      : index === 0
-        ? "Biggest influence"
-        : index === criteria.length - 1
-          ? "Smallest influence"
-          : index === 1
-            ? "High influence"
-            : "Medium influence";
-    return (
-      <li
-        className={`tn-priority-card tone-${copy.tone} ${overlay ? "is-drag-overlay" : ""}`}
-        data-priority-card
-        key={criterion}
-        onPointerDown={
-          overlay ? undefined : (event) => beginPointerDrag(event, criterion)
-        }
-      >
-        <span className="tn-priority-number">{equalWeight ? "=" : index + 1}</span>
-        <span className="tn-drag-handle" aria-hidden="true">
-          <span>⠿</span>
-          <small>DRAG</small>
-        </span>
-        <div className="tn-priority-copy">
-          <strong>{copy.title}</strong>
-          <p>{copy.description}</p>
-          <span>{influence}</span>
-        </div>
-        {!overlay && (
-          <div className="tn-priority-controls">
-            <div className="tn-move-controls" aria-label={`Move ${copy.title}`}>
-              <button
-                type="button"
-                disabled={index === 0 || equalWeight}
-                aria-label={`Move ${copy.title} up`}
-                onClick={() => moveCriterion(criterion, -1)}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                disabled={index === criteria.length - 1 || equalWeight}
-                aria-label={`Move ${copy.title} down`}
-                onClick={() => moveCriterion(criterion, 1)}
-              >
-                ↓
-              </button>
-            </div>
-            <button
-              className="tn-remove-priority"
-              type="button"
-              aria-label={`Remove ${copy.title}`}
-              onClick={() => removeCriterion(criterion)}
-            >
-              <span aria-hidden="true">×</span> Remove
-            </button>
-          </div>
-        )}
-      </li>
-    );
-  }
 
   const searchConfirmed = Boolean(
     selectedIntake &&
@@ -1067,137 +784,109 @@ export function CampusNotebook({
     );
   }
 
-  function renderPriorityStep() {
-    const remaining = drag
-      ? criteria.filter((criterion) => criterion !== drag.criterion)
-      : criteria;
-    const rendered: ReactNode[] = [];
-    remaining.forEach((criterion, index) => {
-      if (drag && drag.dropIndex === index) {
-        rendered.push(
-          <li
-            className="tn-priority-slot"
-            data-drag-placeholder
-            key="drag-placeholder"
-          >
-            <span>Drop at priority {index + 1}</span>
-          </li>,
-        );
-      }
-      const originalIndex = criteria.indexOf(criterion);
-      rendered.push(renderPriorityCard(criterion, originalIndex));
-    });
-    if (drag && drag.dropIndex >= remaining.length) {
-      rendered.push(
-        <li
-          className="tn-priority-slot"
-          data-drag-placeholder
-          key="drag-placeholder-end"
-        >
-          <span>Drop at priority {remaining.length + 1}</span>
-        </li>,
-      );
-    }
 
+  function renderPreferenceStep() {
+    const selectedPreference = data.scoring.time_preferences.find(
+      (preference) => preference.key === timePreference,
+    ) ?? data.scoring.time_preferences[0];
     return (
-      <section className="tn-step-panel tn-priority-step" aria-labelledby="tn-priority-title">
-        <header className="tn-step-intro tn-priority-intro">
-          <div>
-            <p className="tn-kicker">Step 3/5</p>
-            <h1 id="tn-priority-title">What bothers you most?</h1>
-            <p>
-              The default settings takes into account all available frustration points, 
-              but the resulting rank might not look accurate. It is advisable remove a few
-              and rerank the rest. 
-            </p>
-          </div>
-          <button
-            className="tn-undo-button"
-            type="button"
-            disabled={priorityHistory.length === 0}
-            onClick={undoPriority}
-          >
-            <span aria-hidden="true">↶</span> Undo
-          </button>
+      <section className="tn-step-panel tn-preference-step" aria-labelledby="tn-preference-title">
+        <header className="tn-step-intro tn-preference-intro">
+          <p className="tn-kicker">Step 3/5</p>
+          <h1 id="tn-preference-title">When should your classes happen?</h1>
+          <p>
+            Every timetable uses the same balanced recipe. Your time choice moves
+            the ideal teaching window, while the optional emphasis controls only
+            strengthen the two trade-offs they name.
+          </p>
         </header>
 
-        <div className="tn-priority-options">
-          <label>
-            <input
-              type="checkbox"
-              checked={equalWeight}
-              onChange={(event) =>
-                commitPriority({
-                  criteria,
-                  equalWeight: event.target.checked,
-                  useDefaults: false,
-                })
-              }
-            />
-            <span className="tn-checkbox" aria-hidden="true" />
-            <span>
-              <strong>Treat everything equally</strong>
-              <small>Every remaining frustration has the same influence.</small>
-            </span>
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={useDefaults}
-              onChange={(event) => restoreDefaults(event.target.checked)}
-            />
-            <span className="tn-checkbox" aria-hidden="true" />
-            <span>
-              <strong>Use default settings</strong>
-              <small>Restore all five frustrations and the standard order.</small>
-            </span>
-          </label>
-        </div>
+        <fieldset className="tn-time-fieldset">
+          <legend>Preferred time</legend>
+          <p>Choose the part of the day your physical classes should gather around.</p>
+          <div className="tn-time-options">
+            {data.scoring.time_preferences.map((preference) => (
+              <label
+                className={preference.key === timePreference ? "is-selected" : ""}
+                key={preference.key}
+              >
+                <input
+                  type="radio"
+                  name="time-preference"
+                  value={preference.key}
+                  checked={preference.key === timePreference}
+                  onChange={() => setTimePreference(preference.key)}
+                />
+                <span className="tn-time-radio" aria-hidden="true" />
+                <span>
+                  <strong>{preference.label}</strong>
+                  <b>{preference.start} to {preference.end}</b>
+                  <small>{preference.description}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
-        <div className="tn-live-frustration" role="status" aria-live="polite">
-          <span className="tn-live-mark" aria-hidden="true">
-            {criteria.length === 0 ? "0" : equalWeight ? "=" : "1"}
-          </span>
+        <div className="tn-model-map" aria-label="Balanced scoring recipe">
           <div>
-            <span>LIVE SUMMARY</span>
-            <strong>
-              {criteria.length === 0
-                ? "No frustrations will affect your result."
-                : equalWeight
-                  ? `All ${criteria.length} remaining frustrations count equally.`
-                  : `Your biggest frustration: ${CRITERION_COPY[criteria[0]].title}`}
-            </strong>
+            <span>THE FIXED RECIPE</span>
+            <strong>One clear daily score</strong>
+            <p>Lower is better. Empty days score 0 and online-only days stay below a campus trip.</p>
           </div>
+          <ol>
+            <li><b>20</b><span>Campus trip</span></li>
+            <li><b>30</b><span>Time placement</span></li>
+            <li><b>20</b><span>Day span</span></li>
+            <li><b>10</b><span>Waiting</span></li>
+            <li><b>10</b><span>Short day</span></li>
+            <li><b>10</b><span>Heavy day</span></li>
+          </ol>
         </div>
 
-        {criteria.length === 0 ? (
-          <div className="tn-priority-empty">
-            <strong>Ranking is turned off.</strong>
-            <p>You can continue to a timetable-only result or restore the defaults.</p>
-            <button type="button" onClick={() => restoreDefaults(true)}>
-              Restore default settings
-            </button>
+        <fieldset className="tn-emphasis-fieldset">
+          <legend>Optional personal emphasis</legend>
+          <p>These are independent checkboxes. They do not replace your time choice.</p>
+          <div className="tn-emphasis-grid">
+            <label className={emphasizeShortDays ? "is-selected" : ""}>
+              <input
+                type="checkbox"
+                checked={emphasizeShortDays}
+                onChange={(event) => setEmphasizeShortDays(event.target.checked)}
+              />
+              <span className="tn-checkbox" aria-hidden="true" />
+              <span>
+                <strong>Avoid short campus trips</strong>
+                <small>Adds 5 raw weight points, while the daily cap stays at 100.</small>
+              </span>
+            </label>
+            <label className={emphasizeLongDays ? "is-selected" : ""}>
+              <input
+                type="checkbox"
+                checked={emphasizeLongDays}
+                onChange={(event) => setEmphasizeLongDays(event.target.checked)}
+              />
+              <span className="tn-checkbox" aria-hidden="true" />
+              <span>
+                <strong>Avoid heavy teaching days</strong>
+                <small>Adds 5 raw weight points, while the daily cap stays at 100.</small>
+              </span>
+            </label>
           </div>
-        ) : (
-          <>
-            <div className="tn-stack-end is-top">
-              <span>Most frustrating</span>
-              <small>Top of the stack</small>
-            </div>
-            <ol
-              className={`tn-priority-list ${equalWeight ? "is-equal" : ""}`}
-              ref={priorityListRef}
-              aria-label="Frustration priority order"
-            >
-              {rendered}
-            </ol>
-            <div className="tn-stack-end is-bottom">
-              <span>Least frustrating</span>
-              <small>Bottom of the stack</small>
-            </div>
-          </>
-        )}
+        </fieldset>
 
+        <div className="tn-preference-summary" role="status" aria-live="polite">
+          <span>LIVE RECIPE</span>
+          <strong>{selectedPreference?.label ?? "Balanced midday"}</strong>
+          <p>
+            {emphasizeShortDays || emphasizeLongDays
+              ? `Extra emphasis: ${[
+                  emphasizeShortDays ? "short campus trips" : "",
+                  emphasizeLongDays ? "heavy teaching days" : "",
+                ].filter(Boolean).join(" and ")}.`
+              : "No personal emphasis added. The balanced weights remain unchanged."}
+          </p>
+        </div>
       </section>
     );
   }
@@ -1294,9 +983,12 @@ export function CampusNotebook({
         </section>
       );
     }
-    const rankingActive = criteria.length > 0;
     const position = summarizeRankPosition(resultRow);
     const betterCount = position.betterCount;
+    const scoreDriver = strongestComponent(resultRow);
+    const activePreference = data.scoring.time_preferences.find(
+      (preference) => preference.key === timePreference,
+    );
     const days = dailyByVariant.get(resultRow.variant_index) ?? [];
     const blocks = blocksByVariant.get(resultRow.variant_index) ?? [];
     return (
@@ -1305,9 +997,7 @@ export function CampusNotebook({
           <div className="tn-result-hero">
             <p className="tn-kicker">Step 5/5</p>
             <h1 id="tn-result-title">
-              {!rankingActive ? (
-                "You chose to view this timetable without a frustration ranking."
-              ) : betterCount === 0 ? (
+              {betterCount === 0 ? (
                 <>
                   No timetable out of{" "}
                   <span className="tn-result-total-number">
@@ -1328,7 +1018,7 @@ export function CampusNotebook({
                 </>
               )}
             </h1>
-            {rankingActive && position.isTied && (
+            {position.isTied && (
               <p className="tn-result-tie-note">
                 {formatNumber(position.tiedCount)} timetables share this score,
                 so the tied positions run from {formatNumber(position.firstPosition)}
@@ -1345,21 +1035,13 @@ export function CampusNotebook({
             </div>
           </div>
           <aside className="tn-result-aside" aria-label="Result summary">
-            <div className={`tn-rank-card ${rankingActive ? "" : "no-rank"}`}>
-              <span>{rankingActive ? "Your position" : "Ranking is off"}</span>
-              {rankingActive ? (
-                <div>
-                  <strong>{formatNumber(resultRow.recalculatedBestRank)}</strong>
-                  <small>of {formatNumber(resultRow.peerCount)}</small>
-                </div>
-              ) : (
-                <strong>Timetable view</strong>
-              )}
-              <p>
-                {rankingActive
-                  ? "Lower is better"
-                  : "No frustration criteria are active."}
-              </p>
+            <div className="tn-rank-card">
+              <span>Your position</span>
+              <div>
+                <strong>{formatNumber(resultRow.recalculatedBestRank)}</strong>
+                <small>of {formatNumber(resultRow.peerCount)}</small>
+              </div>
+              <p>Lower is better</p>
             </div>
           </aside>
         </div>
@@ -1367,39 +1049,30 @@ export function CampusNotebook({
         <div className="tn-result-reading">
           <div className="tn-verdict">
             <span className="tn-verdict-mark" aria-hidden="true">
-              {rankingActive ? "~" : "○"}
+              ~
             </span>
             <div>
-              <strong>
-                {rankingActive
-                  ? resultRow.total_gap_minutes > 0
-                    ? "The waiting time has the clearest impact."
-                    : "This timetable avoids long campus waits."
-                  : "The timetable is shown without a verdict."}
-              </strong>
+              <strong>{COMPONENT_DETAILS[scoreDriver].label} has the clearest impact.</strong>
               <p>
-                {rankingActive
-                  ? equalWeight
-                    ? `All ${criteria.length} remaining frustrations have equal influence.`
-                    : `Your biggest frustration is ${CRITERION_COPY[criteria[0]].title.toLowerCase()}.`
-                  : "Restore a frustration if you want a comparison rank."}
+                Physical teaching is measured against the {activePreference?.start} to{" "}
+                {activePreference?.end} preferred band, then averaged across all seven days.
               </p>
             </div>
           </div>
           <div className="tn-result-stat">
             <span>WAITING BETWEEN CAMPUS CLASSES</span>
-            <strong>{formatMinutes(resultRow.total_gap_minutes)}</strong>
+            <strong>{formatMinutes(resultRow.total_campus_waiting_minutes)}</strong>
             <small>across this week</small>
           </div>
           <div className="tn-result-stat">
-            <span>LONGEST SINGLE GAP</span>
-            <strong>{formatMinutes(resultRow.longest_gap_minutes)}</strong>
-            <small>{resultRow.days_with_gaps} gap days</small>
+            <span>PHYSICAL DAY SPAN</span>
+            <strong>{formatMinutes(resultRow.total_physical_span_minutes)}</strong>
+            <small>{resultRow.physical_days} campus days</small>
           </div>
           <div className="tn-result-stat">
-            <span>CAMPUS DAYS</span>
-            <strong>{resultRow.campus_days}</strong>
-            <small>{formatMinutes(resultRow.total_teaching_minutes)} teaching</small>
+            <span>EMPTY DAYS</span>
+            <strong>{resultRow.empty_days}</strong>
+            <small>{formatMinutes(resultRow.total_teaching_minutes)} total teaching</small>
           </div>
         </div>
 
@@ -1434,51 +1107,41 @@ export function CampusNotebook({
               <span>DETAILED STATISTICS</span>
               <h2 id="tn-score-title">How your score was built.</h2>
               <p>
-                Each active frustration is compared with the same peer group,
-                then weighted using the order you chose.
+                Each day receives an absolute inconvenience score. Empty days
+                contribute 0, then all seven days are averaged for the week.
               </p>
             </div>
             <div className="tn-score-badge">
-              <span>WEIGHTED SCORE</span>
-              <strong>{rankingActive ? formatScore(resultRow.recalculatedScore) : "Off"}</strong>
+              <span>WEEKLY SCORE</span>
+              <strong>{formatScore(resultRow.recalculatedScore)}</strong>
               <small>Lower is better</small>
             </div>
           </header>
-          {rankingActive ? (
-            <div className="tn-score-table-scroll" tabIndex={0}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Priority</th>
-                    <th>Frustration</th>
-                    <th>Your value</th>
-                    <th>Peer percentile</th>
-                    <th>Weight</th>
-                    <th>Score impact</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {criteria.map((criterion, index) => {
-                    const component = resultRow.components[criterion];
-                    return (
-                      <tr key={criterion}>
-                        <td>{equalWeight ? "=" : index + 1}</td>
-                        <th scope="row">{CRITERION_COPY[criterion].title}</th>
-                        <td>{formatCriterionValue(criterion, component.raw)}</td>
-                        <td>{formatScore(component.percentile)}%</td>
-                        <td>{(component.weight * 100).toFixed(1)}%</td>
-                        <td>{formatScore(component.contribution)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="tn-score-empty">
-              Restore at least one frustration to see a score explanation.
-            </div>
-          )}
+          <div className="tn-score-table-scroll" tabIndex={0}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Component</th>
+                  <th>Week measurement</th>
+                  <th>Daily cap</th>
+                  <th>Score impact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SCORING_COMPONENT_KEYS.map((componentKey) => {
+                  const component = resultRow.components[componentKey];
+                  return (
+                    <tr key={componentKey}>
+                      <th scope="row">{COMPONENT_DETAILS[componentKey].label}</th>
+                      <td>{formatComponentValue(componentKey, component.raw)}</td>
+                      <td>{formatScore(component.dailyCap)}</td>
+                      <td>{formatScore(component.contribution)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section className="tn-dashboard-next" aria-labelledby="tn-dashboard-next-title">
@@ -1510,17 +1173,15 @@ export function CampusNotebook({
       : step === 1
         ? renderConfigStep()
         : step === 2
-          ? renderPriorityStep()
+          ? renderPreferenceStep()
           : step === 3
             ? renderCompareStep()
             : renderResultStep();
 
-  const livePriority =
-    criteria.length === 0
-      ? "Ranking disabled"
-      : equalWeight
-        ? `${criteria.length} equal frustrations`
-        : CRITERION_COPY[criteria[0]].title;
+  const livePreference =
+    data.scoring.time_preferences.find(
+      (preference) => preference.key === timePreference,
+    )?.label ?? "Balanced midday";
   const liveComparison =
     scope === "similar"
       ? "Students like me"
@@ -1608,7 +1269,7 @@ export function CampusNotebook({
                 {step === 0
                   ? "Continue to configuration"
                   : step === 1
-                    ? "Continue to frustrations"
+                    ? "Continue to preferences"
                     : step === 2
                       ? "Continue to comparison"
                       : "Show my timetable"}
@@ -1626,10 +1287,9 @@ export function CampusNotebook({
                   setSelectedGrouping(null);
                   setSelectedElective(null);
                   setSelectedWeek(defaultWeek);
-                  setCriteria([...defaultCriteria]);
-                  setEqualWeight(false);
-                  setUseDefaults(true);
-                  setPriorityHistory([]);
+                  setTimePreference(data.scoring.default_time_preference);
+                  setEmphasizeShortDays(false);
+                  setEmphasizeLongDays(false);
                   setScope("all");
                   setSameSchool(false);
                 }}
@@ -1647,13 +1307,9 @@ export function CampusNotebook({
               <div>
                 <strong>APU Timetable Analyzer</strong>
                 <p>
-                  Everyone says that their timetable is bad.
-                  But how bad is it?
-                  <br/>
-                  <br/>
-                  This project analyzes timetables 
-                  in APU and ranks them to figure out
-                  how "bad" they really are.
+                  See how much of your week is claimed by campus trips, awkward
+                  timing, long spans, waiting, and teaching load. The score stays
+                  absolute, while the rank shows where you sit in your chosen group.
                 </p>
               </div>
             </div>
@@ -1676,8 +1332,8 @@ export function CampusNotebook({
                   </dd>
                 </div>
                 <div>
-                  <dt>Most important</dt>
-                  <dd>{livePriority}</dd>
+                  <dt>Time preference</dt>
+                  <dd>{livePreference}</dd>
                 </div>
                 <div>
                   <dt>Compared with</dt>
@@ -1706,24 +1362,6 @@ export function CampusNotebook({
           </aside>
         )}
       </div>
-      {drag && (
-        <ol
-          className="tn-drag-overlay-list"
-          style={
-            {
-              left: `${drag.left}px`,
-              top: `${drag.top}px`,
-              width: `${drag.width}px`,
-            } as CSSProperties
-          }
-        >
-          {renderPriorityCard(
-            drag.criterion,
-            criteria.indexOf(drag.criterion),
-            true,
-          )}
-        </ol>
-      )}
       <div className={`tn-toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite">
         {toast}
       </div>

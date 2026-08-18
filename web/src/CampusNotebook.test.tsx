@@ -10,7 +10,11 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { CampusNotebook, rankIntakeMatches } from "./CampusNotebook";
 import { parseDashboardData } from "./data";
-import { rankVariants, summarizeRankPosition } from "./ranking";
+import {
+  createScoringContext,
+  rankVariants,
+  summarizeRankPosition,
+} from "./ranking";
 import type { DashboardData } from "./types";
 
 let data: DashboardData;
@@ -34,6 +38,31 @@ afterEach(cleanup);
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-MY").format(value);
+}
+
+function activeWeek(): string {
+  const now = new Date();
+  const today = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+  return data.weeks.find(
+    (week) => week.week_start <= today && today <= week.week_end,
+  )?.week_start ?? data.weeks[0].week_start;
+}
+
+function defaultRanked() {
+  return rankVariants(
+    data.weeklyMetrics.filter((row) => row.week_start === activeWeek()),
+    data.scoring,
+    {
+      timePreference: data.scoring.default_time_preference,
+      emphasizeShortDays: false,
+      emphasizeLongDays: false,
+    },
+    createScoringContext(data.dailyMetrics, data.timetableBlocks),
+  );
 }
 
 describe("Campus Notebook wizard", () => {
@@ -67,11 +96,7 @@ describe("Campus Notebook wizard", () => {
   });
 
   it("explains the tied worst position for APU2F2602CS(DF)", async () => {
-    const ranked = rankVariants(
-      data.weeklyMetrics.filter((row) => row.week_start === "2026-08-10"),
-      ["gap_burden"],
-      [1],
-    );
+    const ranked = defaultRanked();
     const target = ranked.find(
       (row) => row.intake_code === "APU2F2602CS(DF)",
     );
@@ -84,20 +109,8 @@ describe("Campus Notebook wizard", () => {
     await user.type(search, "APU2F2602CS(DF)");
     await user.keyboard("{Enter}{Enter}");
     await user.click(
-      screen.getByRole("button", { name: /Continue to frustrations/ }),
+      screen.getByRole("button", { name: /Continue to preferences/ }),
     );
-
-    for (const frustration of [
-      "Late-only campus days",
-      "Early-only campus days",
-      "One-hour-only campus trips",
-      "Overloaded days",
-    ]) {
-      await user.click(
-        screen.getByRole("button", { name: `Remove ${frustration}` }),
-      );
-    }
-
     await user.click(
       screen.getByRole("button", { name: /Continue to comparison/ }),
     );
@@ -126,13 +139,18 @@ describe("Campus Notebook wizard", () => {
     ).toBeTruthy();
   });
 
-  it("supports the keyboard flow, detected-only states, priorities, and result", async () => {
-    const defaultRanked = rankVariants(
-      data.weeklyMetrics.filter((row) => row.week_start === "2026-08-10"),
-      data.scoring.default_criterion_order,
-      data.scoring.position_weights,
+  it("supports the keyboard flow, detected-only states, preferences, and result", async () => {
+    const ranked = rankVariants(
+      data.weeklyMetrics.filter((row) => row.week_start === activeWeek()),
+      data.scoring,
+      {
+        timePreference: data.scoring.default_time_preference,
+        emphasizeShortDays: true,
+        emphasizeLongDays: false,
+      },
+      createScoringContext(data.dailyMetrics, data.timetableBlocks),
     );
-    const expectedResult = defaultRanked.find(
+    const expectedResult = ranked.find(
       (row) =>
         row.intake_code === "APD3F2605CS(DA)" && row.grouping === "G1",
     );
@@ -170,43 +188,20 @@ describe("Campus Notebook wizard", () => {
     expect(screen.getByText("No electives detected")).toBeTruthy();
 
     await user.click(
-      screen.getByRole("button", { name: /Continue to frustrations/ }),
+      screen.getByRole("button", { name: /Continue to preferences/ }),
     );
     expect(
-      screen.getByRole("heading", { name: "What bothers you most?" }),
-    ).toBeTruthy();
-    expect(screen.getByText("Most frustrating")).toBeTruthy();
-    expect(screen.getByText("Least frustrating")).toBeTruthy();
-    expect(
-      screen.getByText("Your biggest frustration: Long gaps between classes"),
+      screen.getByRole("heading", { name: "When should your classes happen?" }),
     ).toBeTruthy();
     expect(
-      screen.queryByRole("button", { name: "Drag Long gaps between classes" }),
-    ).toBeNull();
-
-    await user.click(
-      screen.getByRole("button", { name: "Remove Long gaps between classes" }),
-    );
-    expect(
-      screen.getByText("Your biggest frustration: Late-only campus days"),
+      screen.getByRole("radio", { name: /Balanced midday/ }),
     ).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: /Undo/ }));
-    expect(
-      screen.getByText("Your biggest frustration: Long gaps between classes"),
-    ).toBeTruthy();
-
-    const equalWeight = screen.getByRole("checkbox", {
-      name: /Treat everything equally/,
+    const shortTripEmphasis = screen.getByRole("checkbox", {
+      name: /Avoid short campus trips/,
     });
-    await user.click(equalWeight);
+    await user.click(shortTripEmphasis);
     expect(
-      screen.getByText("All 5 remaining frustrations count equally."),
-    ).toBeTruthy();
-    await user.click(
-      screen.getByRole("checkbox", { name: /Use default settings/ }),
-    );
-    expect(
-      screen.getByText("Your biggest frustration: Long gaps between classes"),
+      screen.getByText(/Extra emphasis: short campus trips/),
     ).toBeTruthy();
 
     await user.click(
@@ -258,8 +253,8 @@ describe("Campus Notebook wizard", () => {
       screen.getByRole("heading", { name: "How your score was built." }),
     ).toBeTruthy();
     const scoreTable = screen.getByRole("table");
-    expect(within(scoreTable).getAllByRole("row")).toHaveLength(6);
-    expect(within(scoreTable).getByText("Peer percentile")).toBeTruthy();
+    expect(within(scoreTable).getAllByRole("row")).toHaveLength(8);
+    expect(within(scoreTable).getByText("Daily cap")).toBeTruthy();
     expect(within(scoreTable).getByText("Score impact")).toBeTruthy();
     expect(screen.getAllByText("Lower is better")).toHaveLength(2);
 
