@@ -17,6 +17,7 @@ import {
   type RankedVariant,
   type ScoringPreferences,
 } from "./ranking";
+import { ScoringHelp } from "./ScoringHelp";
 import { VerticalTimetable } from "./VerticalTimetable";
 import type { DashboardData, IntakeMetadata, ScoringComponentKey, WeeklyMetric } from "./types";
 
@@ -786,24 +787,35 @@ export function CampusNotebook({
 
 
   function renderPreferenceStep() {
-    const selectedPreference = data.scoring.time_preferences.find(
-      (preference) => preference.key === timePreference,
-    ) ?? data.scoring.time_preferences[0];
     return (
       <section className="tn-step-panel tn-preference-step" aria-labelledby="tn-preference-title">
         <header className="tn-step-intro tn-preference-intro">
           <p className="tn-kicker">Step 3/5</p>
           <h1 id="tn-preference-title">When should your classes happen?</h1>
           <p>
-            Every timetable uses the same balanced recipe. Your time choice moves
-            the ideal teaching window, while the optional emphasis controls only
-            strengthen the two trade-offs they name.
+            Choose where physical classes should gather, then add personal
+            emphasis only if one of the two trade-offs matters more to you.
           </p>
         </header>
 
-        <fieldset className="tn-time-fieldset">
-          <legend>Preferred time</legend>
-          <p>Choose the part of the day your physical classes should gather around.</p>
+        <fieldset
+          className="tn-time-fieldset"
+          aria-describedby="tn-preferred-time-description"
+        >
+          <legend className="tn-fieldset-legend">Preferred time</legend>
+          <div className="tn-time-heading-row">
+            <div className="tn-time-heading-copy">
+              <h2>Preferred time</h2>
+              <p id="tn-preferred-time-description">
+                Choose the part of the day your physical classes should gather around.
+              </p>
+            </div>
+            <ScoringHelp
+              scoring={data.scoring}
+              preferences={scoringPreferences}
+              triggerLabel="How scoring works"
+            />
+          </div>
           <div className="tn-time-options">
             {data.scoring.time_preferences.map((preference) => (
               <label
@@ -827,22 +839,6 @@ export function CampusNotebook({
             ))}
           </div>
         </fieldset>
-
-        <div className="tn-model-map" aria-label="Balanced scoring recipe">
-          <div>
-            <span>THE FIXED RECIPE</span>
-            <strong>One clear daily score</strong>
-            <p>Lower is better. Empty days score 0 and online-only days stay below a campus trip.</p>
-          </div>
-          <ol>
-            <li><b>20</b><span>Campus trip</span></li>
-            <li><b>30</b><span>Time placement</span></li>
-            <li><b>20</b><span>Day span</span></li>
-            <li><b>10</b><span>Waiting</span></li>
-            <li><b>10</b><span>Short day</span></li>
-            <li><b>10</b><span>Heavy day</span></li>
-          </ol>
-        </div>
 
         <fieldset className="tn-emphasis-fieldset">
           <legend>Optional personal emphasis</legend>
@@ -875,18 +871,6 @@ export function CampusNotebook({
           </div>
         </fieldset>
 
-        <div className="tn-preference-summary" role="status" aria-live="polite">
-          <span>LIVE RECIPE</span>
-          <strong>{selectedPreference?.label ?? "Balanced midday"}</strong>
-          <p>
-            {emphasizeShortDays || emphasizeLongDays
-              ? `Extra emphasis: ${[
-                  emphasizeShortDays ? "short campus trips" : "",
-                  emphasizeLongDays ? "heavy teaching days" : "",
-                ].filter(Boolean).join(" and ")}.`
-              : "No personal emphasis added. The balanced weights remain unchanged."}
-          </p>
-        </div>
       </section>
     );
   }
@@ -1105,7 +1089,14 @@ export function CampusNotebook({
           <header className="tn-score-heading">
             <div>
               <span>DETAILED STATISTICS</span>
-              <h2 id="tn-score-title">How your score was built.</h2>
+              <div className="tn-score-title-row">
+                <h2 id="tn-score-title">How your score was built.</h2>
+                <ScoringHelp
+                  scoring={data.scoring}
+                  preferences={scoringPreferences}
+                  triggerLabel="Explain score components"
+                />
+              </div>
               <p>
                 Each day receives an absolute inconvenience score. Empty days
                 contribute 0, then all seven days are averaged for the week.

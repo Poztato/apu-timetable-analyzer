@@ -30,6 +30,10 @@
   --tn-line-strong: var(--db-line-strong);
   --tn-accent: var(--db-accent);
   --tn-accent-dark: var(--db-accent-dark);
+  --tn-accent-soft: var(--db-accent-soft);
+  --tn-accent-line: var(--db-accent-line);
+  --tn-focus: var(--db-focus);
+  --tn-shadow: var(--db-shadow);
   --tn-danger: var(--db-danger);
   --tn-gap: #e99a2f;
   --tn-late: #8d63d6;
@@ -397,6 +401,10 @@
   line-height: 1.5;
 }
 
+.db-control-help-row {
+  margin-top: 12px;
+}
+
 .db-reset-button {
   min-height: 40px;
   padding: 9px 11px !important;
@@ -747,7 +755,8 @@
   gap: 7px;
 }
 
-.db-time-options label {
+.db-time-options label,
+.db-emphasis-grid label {
   min-height: 72px;
   padding: 11px 9px;
   display: grid;
@@ -761,7 +770,13 @@
   transition: border-color 150ms ease, background-color 150ms ease;
 }
 
-.db-time-options label.is-selected {
+.db-time-options label:hover,
+.db-emphasis-grid label:hover {
+  border-color: var(--db-line-strong);
+}
+
+.db-time-options label.is-selected,
+.db-emphasis-grid label.is-selected {
   background: var(--db-accent-soft);
   border-color: var(--db-accent);
 }
@@ -799,128 +814,57 @@
   outline-offset: 3px;
 }
 
-.db-time-options strong {
+.db-time-options strong,
+.db-emphasis-grid strong {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 0.71rem;
 }
 
-.db-time-options small {
+.db-time-options small,
+.db-emphasis-grid small {
   color: var(--db-muted);
   font-size: 0.57rem;
-}
-
-.db-model-strip {
-  margin-top: 13px;
-  padding: 12px;
-  background: var(--db-paper);
-  border: 1px solid var(--db-line-strong);
-  border-radius: 10px;
-}
-
-.db-model-strip > span {
-  color: var(--db-muted);
-  font-size: 0.57rem;
-  font-weight: 820;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.db-model-strip > div {
-  margin-top: 8px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.db-model-strip b {
-  padding: 6px;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  color: var(--db-accent-dark);
-  background: var(--db-soft);
-  border-radius: 6px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.78rem;
-}
-
-.db-model-strip b small {
-  color: var(--db-muted);
-  font-family: inherit;
-  font-size: 0.52rem;
-  font-weight: 650;
-}
-
-.db-model-strip p {
-  margin: 8px 0 0;
-  color: var(--db-muted);
-  font-size: 0.58rem;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .db-emphasis-grid {
   margin-top: 9px;
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
 }
 
 .db-emphasis-grid label {
-  min-height: 57px;
-  padding: 10px;
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  align-items: center;
-  gap: 2px 9px;
-  background: var(--db-soft);
-  border: 1px solid var(--db-line);
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.db-emphasis-grid label.is-selected {
-  background: var(--db-accent-soft);
-  border-color: var(--db-accent-line);
+  min-height: 92px;
 }
 
 .db-emphasis-grid label > span {
-  width: 34px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
+  display: grid;
   grid-row: 1 / 3;
-  position: relative;
-  background: var(--db-line-strong);
-  border-radius: 11px;
-  transition: background-color 160ms ease;
+  place-items: center;
+  color: var(--db-paper);
+  border: 1px solid var(--db-line-strong);
+  border-radius: 4px;
+  transition: border-color 150ms ease, background-color 150ms ease;
 }
 
 .db-emphasis-grid label > span::after {
-  width: 14px;
-  height: 14px;
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  background: var(--db-paper);
-  border-radius: 50%;
-  transition: transform 170ms ease;
+  content: "✓";
+  opacity: 0;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .db-emphasis-grid input:checked + span {
   background: var(--db-accent);
+  border-color: var(--db-accent);
 }
 
 .db-emphasis-grid input:checked + span::after {
-  transform: translateX(14px);
-}
-
-.db-emphasis-grid strong {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.69rem;
-}
-
-.db-emphasis-grid small {
-  color: var(--db-muted);
-  font-size: 0.56rem;
-  line-height: 1.35;
+  opacity: 1;
 }
 
 .db-workspace {
@@ -2328,7 +2272,7 @@
   }
 
   .db-time-options,
-  .db-model-strip > div {
+  .db-emphasis-grid {
     grid-template-columns: 1fr;
   }
 

@@ -177,6 +177,10 @@ describe("Dashboard MVP", () => {
     expect(
       within(controls).getByText(`${formatNumber(defaultPeerCount)} variants`),
     ).toBeTruthy();
+    expect(within(controls).queryByText("Fixed daily recipe")).toBeNull();
+    expect(
+      within(controls).getByRole("button", { name: "How scoring works" }),
+    ).toBeTruthy();
     expect(screen.getAllByRole("row").length).toBeGreaterThan(1);
 
     const inspectTab = screen.getByRole("tab", { name: /Inspect timetable/ });
@@ -198,8 +202,14 @@ describe("Dashboard MVP", () => {
     expect(
       screen.getByRole("region", { name: /Weekly timetable for/ }),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Explain score components" }),
+    ).toBeTruthy();
 
     await user.click(screen.getByRole("tab", { name: /Compare timetables/ }));
+    expect(
+      screen.queryByRole("button", { name: "Explain score components" }),
+    ).toBeNull();
     expect(screen.getByText("Choose two timetables to begin.")).toBeTruthy();
     expect(
       screen.getByRole("combobox", { name: "Timetable A" }).textContent,

@@ -196,13 +196,18 @@ describe("Campus Notebook wizard", () => {
     expect(
       screen.getByRole("radio", { name: /Balanced midday/ }),
     ).toBeTruthy();
+    expect(screen.queryByText("One clear daily score")).toBeNull();
+    const scoringHelp = screen.getByRole("button", {
+      name: "How scoring works",
+    });
+    expect(scoringHelp.closest(".tn-time-heading-row")).toBeTruthy();
+    expect(scoringHelp.closest(".tn-step-intro")).toBeNull();
+    expect(screen.queryByText("LIVE RECIPE")).toBeNull();
     const shortTripEmphasis = screen.getByRole("checkbox", {
       name: /Avoid short campus trips/,
     });
     await user.click(shortTripEmphasis);
-    expect(
-      screen.getByText(/Extra emphasis: short campus trips/),
-    ).toBeTruthy();
+    expect((shortTripEmphasis as HTMLInputElement).checked).toBe(true);
 
     await user.click(
       screen.getByRole("button", { name: /Continue to comparison/ }),
@@ -251,6 +256,9 @@ describe("Campus Notebook wizard", () => {
     expect(within(resultSummary).queryByRole("button")).toBeNull();
     expect(
       screen.getByRole("heading", { name: "How your score was built." }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Explain score components" }),
     ).toBeTruthy();
     const scoreTable = screen.getByRole("table");
     expect(within(scoreTable).getAllByRole("row")).toHaveLength(8);

@@ -5,6 +5,7 @@ import App from "./App";
 import "./index.css";
 import "./wizard.css";
 import "./dashboard.css";
+import "./scoring-help.css";
 
 const root = document.getElementById("root");
 

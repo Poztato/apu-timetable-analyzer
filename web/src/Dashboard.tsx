@@ -17,6 +17,7 @@ import {
   type ScoringPreferences,
 } from "./ranking";
 import { rankIntakeMatches } from "./CampusNotebook";
+import { ScoringHelp } from "./ScoringHelp";
 import { VerticalTimetable } from "./VerticalTimetable";
 import type {
   CodeNameOption,
@@ -959,6 +960,13 @@ export function Dashboard({
                 <span>Scoring preferences</span>
                 <h2>Convenience Recipe</h2>
                 <p>Move the ideal time band, then add optional personal emphasis.</p>
+                <div className="db-control-help-row">
+                  <ScoringHelp
+                    scoring={data.scoring}
+                    preferences={scoringPreferences}
+                    triggerLabel="How scoring works"
+                  />
+                </div>
               </div>
               <button
                 className="db-reset-button"
@@ -990,19 +998,6 @@ export function Dashboard({
                 ))}
               </div>
             </fieldset>
-
-            <div className="db-model-strip" aria-label="Fixed daily scoring recipe">
-              <span>Fixed daily recipe</span>
-              <div>
-                <b>20 <small>trip</small></b>
-                <b>30 <small>placement</small></b>
-                <b>20 <small>span</small></b>
-                <b>10 <small>waiting</small></b>
-                <b>10 <small>short</small></b>
-                <b>10 <small>heavy</small></b>
-              </div>
-              <p>Empty day 0, online-only day 5 to 19, physical day 20 to 100.</p>
-            </div>
 
             <fieldset className="db-emphasis-fieldset">
               <legend>Optional personal emphasis</legend>
@@ -1344,6 +1339,11 @@ export function Dashboard({
                     <h3 id="db-score-title">How this timetable reached {formatScore(selected.recalculatedScore)}.</h3>
                     <p>Each day is scored on the same absolute scale, then all seven days are averaged.</p>
                   </div>
+                  <ScoringHelp
+                    scoring={data.scoring}
+                    preferences={scoringPreferences}
+                    triggerLabel="Explain score components"
+                  />
                 </header>
                 <div className="db-table-scroll" tabIndex={0}>
                   <table className="db-score-table">
