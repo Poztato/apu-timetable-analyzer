@@ -9,6 +9,7 @@ The analyzer now uses one explainable convenience model instead of asking users 
 - Find an intake code and select its week, group, and elective route.
 - Choose a balanced midday, morning, or afternoon physical-class preference.
 - Optionally place extra emphasis on avoiding short campus trips or heavy teaching days.
+- Open the scoring guide for plain-language factor explanations and simple good and bad timetable examples.
 - View an absolute weekly score with a component-by-component explanation.
 - Choose a fair comparison group and see the timetable's rank within it.
 - Filter the full dashboard by programme, academic level, course, specialism, group, study mode, and delivery mode.
