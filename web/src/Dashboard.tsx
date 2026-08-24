@@ -1019,7 +1019,7 @@ export function Dashboard({
                   />
                   <span aria-hidden="true" />
                   <strong>Avoid heavy teaching days</strong>
-                  <small>Tiring full-day classes that drains our sanity.</small>
+                  <small>Tiring full-day classes that drain our mental capacity.</small>
                 </label>
               </div>
             </fieldset>

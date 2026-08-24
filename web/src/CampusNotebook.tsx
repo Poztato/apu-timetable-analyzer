@@ -856,9 +856,7 @@ export function CampusNotebook({
               <span>
                 <strong>Avoid short campus trips</strong>
                 <small>
-                  Short campus trips are days where there's only a short class.
-                  This can be frustrating because you have to travel all the way to
-                  campus just for it. 
+                  Annoying short classes that we have to travel to campus for.
                 </small>
               </span>
             </label>
@@ -872,8 +870,7 @@ export function CampusNotebook({
               <span>
                 <strong>Avoid heavy teaching days</strong>
                 <small>
-                  This is the direct opposite of short campus trips, where too many
-                  classes are piled up into a single day.
+                  Tiring full-day classes that drain our mental capacity.
                 </small>
               </span>
             </label>

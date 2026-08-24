@@ -9,7 +9,7 @@
       "short_label": "Midday",
       "start": "11:00",
       "end": "13:30",
-      "description": "Keeps physical teaching close to the middle of the day."
+      "description": "Prefer classes in the middle of the day."
     },
     {
       "key": "morning",
@@ -17,7 +17,7 @@
       "short_label": "Morning",
       "start": "09:00",
       "end": "11:30",
-      "description": "Favours physical classes that leave the afternoon clearer."
+      "description": "Prefer classes in the morning."
     },
     {
       "key": "afternoon",
@@ -25,7 +25,7 @@
       "short_label": "Afternoon",
       "start": "13:30",
       "end": "16:00",
-      "description": "Favours physical classes that avoid early starts."
+      "description": "Prefer classes in the afternoon."
     }
   ],
   "component_weights": {
