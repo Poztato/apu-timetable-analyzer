@@ -745,8 +745,8 @@ export function Dashboard({
         >
           <BrandIcon className="db-brand-mark" />
           <span>
-            <strong>Timetable Check</strong>
-            <small>Comparison desk</small>
+            <strong>APU Timetable Analyzer</strong>
+            <small>by Leonard Su</small>
           </span>
         </button>
         <p>
@@ -776,8 +776,7 @@ export function Dashboard({
             <p className="db-kicker" style={{ fontSize: "16px" }}>APU Timetable Analyzer</p>
             <h1 id="db-title">Dashboard</h1>
             <p>
-              Choose when classes should happen, compare absolute scores, and
-              see how each timetable ranks in a fair group.
+              View the full list of APU timetables, inspect them, or compare two against each other. 
             </p>
           </div>
           <dl className="db-hero-stats">
@@ -808,9 +807,9 @@ export function Dashboard({
             <header className="db-control-heading">
               <div className="db-step-number" aria-hidden="true">01</div>
               <div>
-                <span>Comparison pool</span>
+                <span>Step 1/3</span>
                 <h2>Timetable Filter</h2>
-                <p>Choose the group used for ranking. These filters do not change a timetable's score.</p>
+                <p>Choose which timetables we should consider.</p>
               </div>
               <button className="db-reset-button" type="button" onClick={resetFilters}>
                 Reset pool
@@ -957,9 +956,9 @@ export function Dashboard({
             <header className="db-control-heading">
               <div className="db-step-number" aria-hidden="true">02</div>
               <div>
-                <span>Scoring preferences</span>
-                <h2>Convenience Recipe</h2>
-                <p>Move the ideal time band, then add optional personal emphasis.</p>
+                <span>Step 2/3</span>
+                <h2>Timetable Preferences</h2>
+                <p>Choose your ideal timetable timings.</p>
                 <div className="db-control-help-row">
                   <ScoringHelp
                     scoring={data.scoring}
@@ -1010,7 +1009,7 @@ export function Dashboard({
                   />
                   <span aria-hidden="true" />
                   <strong>Avoid short campus trips</strong>
-                  <small>Adds 5 raw weight points within the same 100-point cap.</small>
+                  <small>Annoying short classes that we have to travel to campus for.</small>
                 </label>
                 <label className={emphasizeLongDays ? "is-selected" : ""}>
                   <input
@@ -1020,7 +1019,7 @@ export function Dashboard({
                   />
                   <span aria-hidden="true" />
                   <strong>Avoid heavy teaching days</strong>
-                  <small>Adds 5 raw weight points within the same 100-point cap.</small>
+                  <small>Tiring full-day classes that drains our sanity.</small>
                 </label>
               </div>
             </fieldset>
@@ -1031,7 +1030,7 @@ export function Dashboard({
           <header className="db-workspace-heading">
             <div className="db-step-number" aria-hidden="true">03</div>
             <div>
-              <span>Results workspace</span>
+              <span>Step 3/3</span>
               <h2 id="db-workspace-title">View Results</h2>
             </div>
           </header>
@@ -1247,7 +1246,7 @@ export function Dashboard({
                   <span>Timetable inspector</span>
                   <h3 id="db-inspector-empty-title">Choose a timetable to inspect.</h3>
                   <p>
-                    Search by intake code, group, elective, or programme. The full score explanation and vertical week will appear after selection.
+                    Search by intake code, group, elective, or programme. The full score explanation and timetable will appear after selection.
                   </p>
                 </div>
                 <div className="db-inspector-picker">
@@ -1271,11 +1270,11 @@ export function Dashboard({
               id="db-inspect-view"
               role="tabpanel"
             >
-              <section className="db-inspector-hero" aria-labelledby="db-inspector-title">
+              <section className="db-inspector-hero" aria-labelledby="db-timetable-title">
                 <div>
-                  <span>Selected timetable</span>
-                  <h3 id="db-inspector-title">{programmeTitle(selectedIntake)}</h3>
-                  <p>{variantLabel(selected)} · {programmeMeta(selectedIntake)}</p>
+                  <span>Selected intake</span>
+                  <h3 id="db-timetable-title">{variantLabel(selected)}</h3>
+                  <p>{programmeMeta(selectedIntake)}</p>
                 </div>
                 <aside className="db-inspector-rank" aria-label="Selected timetable position">
                   <span>Your position</span>
@@ -1307,12 +1306,12 @@ export function Dashboard({
                 <div><span>PHYSICAL DAYS</span><strong>{selected.physical_days}</strong><small>{selected.empty_days} empty days</small></div>
               </section>
 
-              <section className="db-timetable-section" aria-labelledby="db-timetable-title">
+              <section className="db-timetable-section" aria-labelledby="db-inspector-title">
                 <header className="db-section-heading">
                   <div>
-                    <span>Vertical week view</span>
-                    <h3 id="db-timetable-title">See exactly where the score comes from.</h3>
-                    <p>Days run across the top. Time runs down the left.</p>
+                    <span>Selected timetable</span>
+                    <h3 id="db-inspector-title">{programmeTitle(selectedIntake)}</h3>
+                    <p>{variantLabel(selected)} · {programmeMeta(selectedIntake)}</p>
                   </div>
                   <div className="tn-chart-legend" aria-label="Timetable legend">
                     <span><i className="legend-campus" /> Campus class</span>

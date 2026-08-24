@@ -656,8 +656,7 @@ export function CampusNotebook({
           <p className="tn-kicker">Step 2/5</p>
           <h1 id="tn-config-title">Which timetable should we use?</h1>
           <p>
-            The intake code tells us your course and specialism. This page 
-            tells us which group and electives you took. 
+            Enter your preferred week, group, and elective details.
           </p>
         </header>
         <div className="tn-identity-strip">
@@ -678,8 +677,9 @@ export function CampusNotebook({
         <div className="tn-config-sections">
           <section className="tn-config-section">
             <div className="tn-config-heading">
+              <br />
               <h2>Which timetable week?</h2>
-              <p>The current week is selected when it exists for this intake.</p>
+              {/* <p>Choose which week's timetable we should look at.</p> */}
             </div>
             {intakeWeeks.length <= 1 ? (
               <div className="tn-detected-only">
@@ -708,8 +708,9 @@ export function CampusNotebook({
 
           <section className="tn-config-section">
             <div className="tn-config-heading">
+              <br />
               <h2>Which group are you in?</h2>
-              <p>Only groups recorded for this intake and week are shown.</p>
+              {/* <p>Choose which intake we should look at.</p> */}
             </div>
             {groupings.length <= 1 ? (
               <div className="tn-detected-only">
@@ -741,8 +742,9 @@ export function CampusNotebook({
 
           <section className="tn-config-section">
             <div className="tn-config-heading">
+              <br />
               <h2>Which elective did you choose?</h2>
-              <p>Elective choices stay within the selected group.</p>
+              {/* <p>Elective choices stay within the selected group.</p> */}
             </div>
             {!meaningfulElectives ? (
               <div className="tn-detected-only">
@@ -791,10 +793,9 @@ export function CampusNotebook({
       <section className="tn-step-panel tn-preference-step" aria-labelledby="tn-preference-title">
         <header className="tn-step-intro tn-preference-intro">
           <p className="tn-kicker">Step 3/5</p>
-          <h1 id="tn-preference-title">When should your classes happen?</h1>
+          <h1 id="tn-preference-title">What does your ideal timetable look like?</h1>
           <p>
-            Choose where physical classes should gather, then add personal
-            emphasis only if one of the two trade-offs matters more to you.
+            Choose your preferred class timings and personal preferences. 
           </p>
         </header>
 
@@ -807,7 +808,7 @@ export function CampusNotebook({
             <div className="tn-time-heading-copy">
               <h2>Preferred time</h2>
               <p id="tn-preferred-time-description">
-                Choose the part of the day your physical classes should gather around.
+                Choose period of time you would rather your classes be.
               </p>
             </div>
             <ScoringHelp
@@ -840,9 +841,10 @@ export function CampusNotebook({
           </div>
         </fieldset>
 
+        <br />
         <fieldset className="tn-emphasis-fieldset">
-          <legend>Optional personal emphasis</legend>
-          <p>These are independent checkboxes. They do not replace your time choice.</p>
+          <legend>Optional Preferences</legend>
+          <p>Do you hate heavy campus days or short campus days?</p>
           <div className="tn-emphasis-grid">
             <label className={emphasizeShortDays ? "is-selected" : ""}>
               <input
@@ -853,7 +855,11 @@ export function CampusNotebook({
               <span className="tn-checkbox" aria-hidden="true" />
               <span>
                 <strong>Avoid short campus trips</strong>
-                <small>Adds 5 raw weight points, while the daily cap stays at 100.</small>
+                <small>
+                  Short campus trips are days where there's only a short class.
+                  This can be frustrating because you have to travel all the way to
+                  campus just for it. 
+                </small>
               </span>
             </label>
             <label className={emphasizeLongDays ? "is-selected" : ""}>
@@ -865,7 +871,10 @@ export function CampusNotebook({
               <span className="tn-checkbox" aria-hidden="true" />
               <span>
                 <strong>Avoid heavy teaching days</strong>
-                <small>Adds 5 raw weight points, while the daily cap stays at 100.</small>
+                <small>
+                  This is the direct opposite of short campus trips, where too many
+                  classes are piled up into a single day.
+                </small>
               </span>
             </label>
           </div>
@@ -1143,11 +1152,11 @@ export function CampusNotebook({
           <div className="tn-next-step-copy">
             <span>COMPARISON DASHBOARD</span>
             <h2 id="tn-dashboard-next-title">
-              Put your timetable beside the best and worst.
+              See the full list of timetables.
             </h2>
             <p>
-              The dashboard starts with its default filters, so you can build a
-              fresh comparison from the full timetable set.
+              {/* The dashboard starts with its default filters, so you can build a */}
+              {/* fresh comparison from the full timetable set. */}
             </p>
           </div>
           <button type="button" onClick={() => onOpenDashboard()}>

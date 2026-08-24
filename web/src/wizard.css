@@ -566,12 +566,13 @@
 }
 
 .tn-social-card {
-  padding-bottom: 20px;
+  padding: 18px 18px 10px;
   display: grid;
-  gap: 14px;
+  gap: 8px;
 }
 
 .tn-social-heading {
+  padding: 0 2px 8px;
   display: grid;
   gap: 3px;
 }
@@ -580,39 +581,36 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 7px;
+  gap: 0;
   list-style: none;
+}
+
+.tn-social-links li + li {
+  border-top: 1px solid var(--tn-line);
 }
 
 .tn-social-links a {
   min-width: 0;
-  min-height: 48px;
-  padding: 7px 8px;
+  min-height: 52px;
+  padding: 9px 2px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 14px;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   color: var(--tn-ink);
-  background: var(--tn-paper-soft);
-  border: 1px solid var(--tn-line);
-  border-radius: 10px;
+  border-radius: 5px;
   text-decoration: none;
   transition:
     color 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tn-social-links a:hover {
   color: var(--tn-accent-dark);
-  background: var(--tn-soft);
-  border-color: var(--tn-accent-line);
-  transform: translateX(2px);
 }
 
 .tn-social-links a:active {
-  transform: translateX(2px) translateY(1px);
+  transform: translateY(1px);
 }
 
 .tn-social-links li:last-child a {
@@ -625,6 +623,9 @@
   display: grid;
   place-items: center;
   color: var(--tn-ink);
+  transition:
+    opacity 160ms ease,
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tn-social-icon svg {
@@ -669,15 +670,27 @@
 .tn-social-arrow {
   width: 14px;
   height: 14px;
+  color: var(--tn-muted);
+  opacity: 0.68;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.6;
-  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tn-social-links a:hover .tn-social-icon {
+  opacity: 0.86;
+  transform: translateY(-1px);
 }
 
 .tn-social-links a:hover .tn-social-arrow {
+  color: var(--tn-accent-dark);
+  opacity: 1;
   transform: translate(1px, -1px);
 }
 
