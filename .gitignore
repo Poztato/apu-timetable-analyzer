@@ -14,7 +14,8 @@ __pycache__/
 data/processed/
 
 # Reproducible Stage 8 dashboard exports
-web/public/data/
+web/public/data/*
+!web/public/data/latest.json
 
 # Frontend dependencies and build output
 web/node_modules/
