@@ -66,6 +66,27 @@ function defaultRanked() {
 }
 
 describe("Campus Notebook wizard", () => {
+  it("shows Leonard's website, social profiles, and contact email", () => {
+    render(<CampusNotebook data={data} onOpenDashboard={vi.fn()} />);
+
+    const website = screen.getByRole("link", { name: /Website, leonardsu\.com/i });
+    const linkedIn = screen.getByRole("link", { name: /LinkedIn, Leonard Su/i });
+    const github = screen.getByRole("link", { name: /GitHub, @Poztato/i });
+    const email = screen.getByRole("link", {
+      name: /Email Leonard Su at leonardsu\.contact@gmail\.com/i,
+    });
+
+    expect(website.getAttribute("href")).toBe("https://leonardsu.com");
+    expect(linkedIn.getAttribute("href")).toBe(
+      "https://www.linkedin.com/in/leonard-su/",
+    );
+    expect(github.getAttribute("href")).toBe("https://github.com/Poztato/");
+    expect(email.getAttribute("href")).toBe("mailto:leonardsu.contact@gmail.com");
+    expect(website.querySelector("img")?.getAttribute("src")).toContain(
+      "potato-logo.png",
+    );
+  });
+
   it("ranks typo-tolerant intake suggestions by their strongest match", () => {
     const matches = rankIntakeMatches(
       data.intakes,
