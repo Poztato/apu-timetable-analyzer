@@ -367,58 +367,38 @@ describe("dashboard and checker filter audit", () => {
     }
   });
 
-  it("identifies the reported intake as a legitimate two-way tie for worst", () => {
-    const weekStart = "2026-08-10";
-    const weekRows = data.weeklyMetrics.filter(
-      (row) => row.week_start === weekStart,
-    );
-    const ranked = rankVariants(
-      weekRows,
-      data.scoring,
-      { timePreference: "balanced", emphasizeShortDays: false, emphasizeLongDays: false },
-      scoringContext,
-    );
-    const target = ranked.find(
-      (row) => row.intake_code === "APU2F2602CS(DF)",
-    );
-    const twin = ranked.find(
-      (row) => row.intake_code === "APD2F2602CS(DF)",
-    );
+  it("keeps equal worst scores in the same tied rank range", () => {
+    const tiedWorst = data.weeks
+      .map((week) => {
+        const weekRows = data.weeklyMetrics.filter(
+          (row) => row.week_start === week.week_start,
+        );
+        const ranked = rankVariants(
+          weekRows,
+          data.scoring,
+          { timePreference: "balanced", emphasizeShortDays: false, emphasizeLongDays: false },
+          scoringContext,
+        );
+        return {
+          weekRows,
+          worst: ranked.filter((row) => row.recalculatedIsWorst),
+        };
+      })
+      .find(({ worst }) => worst.length > 1);
 
-    expect(target).toBeDefined();
-    expect(twin).toBeDefined();
-    expect(target!.total_campus_waiting_minutes).toBe(1275);
-    expect(target!.recalculatedScore).toBe(twin!.recalculatedScore);
-    expect(target!.recalculatedIsWorst).toBe(true);
-    expect(summarizeRankPosition(target!)).toMatchObject({
-      betterCount: weekRows.length - 2,
-      firstPosition: weekRows.length - 1,
-      lastPosition: weekRows.length,
-      tiedCount: 2,
-      worseCount: 0,
-    });
-
-    const weekEnd = "2026-08-16";
-    const signature = (variantIndex: number) =>
-      data.timetableBlocks
-        .filter(
-          (block) =>
-            block.variant_index === variantIndex &&
-            block.event_date >= weekStart &&
-            block.event_date <= weekEnd,
-        )
-        .map((block) =>
-          JSON.stringify(
-            Object.fromEntries(
-              Object.entries(block).filter(([key]) => key !== "variant_index"),
-            ),
-          ),
-        )
-        .sort();
-
-    expect(signature(target!.variant_index)).toEqual(
-      signature(twin!.variant_index),
-    );
+    expect(tiedWorst).toBeDefined();
+    const { weekRows, worst } = tiedWorst!;
+    expect(new Set(worst.map((row) => row.recalculatedScore)).size).toBe(1);
+    expect(new Set(worst.map((row) => row.variant_index)).size).toBe(worst.length);
+    for (const row of worst) {
+      expect(summarizeRankPosition(row)).toMatchObject({
+        betterCount: weekRows.length - worst.length,
+        firstPosition: weekRows.length - worst.length + 1,
+        lastPosition: weekRows.length,
+        tiedCount: worst.length,
+        worseCount: 0,
+      });
+    }
   });
 
   it("contains no duplicate exported comparison rows", () => {

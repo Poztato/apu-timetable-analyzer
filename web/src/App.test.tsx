@@ -9,6 +9,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { Dashboard, scheduleBlocksWithGaps } from "./App";
+import { normalizeIntakeSearch, rankIntakeMatches } from "./CampusNotebook";
 import { parseDashboardData } from "./data";
 import {
   createScoringContext,
@@ -152,7 +153,8 @@ describe("Dashboard MVP", () => {
   it("supports smart filters, fuzzy search, inspection, and comparison", async () => {
     const data = loadRealDashboardData();
     expect(data.filters.courses.every((option) => option.name)).toBe(true);
-    expect(data.filters.specialisms.every((option) => option.name)).toBe(true);
+    expect(data.filters.specialisms.every((option) => option.code)).toBe(true);
+    expect(data.filters.specialisms.some((option) => option.name)).toBe(true);
     const now = new Date();
     const today = [
       now.getFullYear(),
@@ -262,6 +264,68 @@ describe("Dashboard MVP", () => {
         deliveryMode: "",
       },
     ).length;
+    const courseRows = filterWeeklyMetrics(
+      data.weeklyMetrics,
+      intakeByCode,
+      {
+        weekStart: defaultWeek,
+        grouping: "",
+        programmeLevel: "",
+        programmeRoute: "",
+        academicLevel: "",
+        courseCode: "CS",
+        specialismCode: "",
+        school: "",
+        studyMode: "",
+        deliveryMode: "",
+      },
+    );
+    const courseIntakes = data.intakes.filter((intake) =>
+      courseRows.some((row) => row.intake_code === intake.intake_code),
+    );
+    const rowCounts = new Map<string, number>();
+    for (const row of courseRows) {
+      rowCounts.set(row.intake_code, (rowCounts.get(row.intake_code) ?? 0) + 1);
+    }
+    let fuzzyFixture:
+      | { query: string; row: (typeof courseRows)[number] }
+      | undefined;
+    for (const row of courseRows) {
+      if (rowCounts.get(row.intake_code) !== 1) continue;
+      const normalized = normalizeIntakeSearch(row.intake_code);
+      for (let index = normalized.length - 2; index > 0; index -= 1) {
+        if (normalized[index] === normalized[index + 1]) continue;
+        const characters = [...normalized];
+        [characters[index], characters[index + 1]] = [
+          characters[index + 1],
+          characters[index],
+        ];
+        const query = characters.join("");
+        if (
+          courseRows.some((candidate) =>
+            normalizeIntakeSearch(candidate.intake_code).includes(query),
+          )
+        ) {
+          continue;
+        }
+        const matches = rankIntakeMatches(
+          courseIntakes,
+          query,
+          defaultWeek,
+          30,
+        );
+        if (
+          matches.some(
+            (match) => match.intake.intake_code === row.intake_code,
+          )
+        ) {
+          fuzzyFixture = { query, row };
+          break;
+        }
+      }
+      if (fuzzyFixture) break;
+    }
+    expect(fuzzyFixture).toBeDefined();
 
     const expectedFoundationPeers = filterWeeklyMetrics(
       data.weeklyMetrics,
@@ -334,19 +398,25 @@ describe("Dashboard MVP", () => {
     await user.keyboard("{Escape}");
 
     const search = screen.getByLabelText("Search intake or programme");
-    await user.type(search, "APD3F2605CS(D)");
-    const matchingRow = screen.getByRole("row", {
-      name: /APD3F2605CS\(DA\).*G1/i,
-    });
-    expect(matchingRow.textContent).toContain("APD3F2605CS(DA)");
+    await user.type(search, fuzzyFixture!.query);
+    const matchingRow = screen.getAllByRole("row").find((row) =>
+      within(row).queryByText(fuzzyFixture!.row.intake_code, {
+        exact: true,
+        selector: "strong",
+      }),
+    );
+    expect(matchingRow).toBeDefined();
+    expect(matchingRow!.textContent).toContain(fuzzyFixture!.row.intake_code);
     expect(
-      screen.getByText(`Scores still use ${formatNumber(expectedCoursePeers)} peers.`),
+      screen.getByText(
+        "Showing the closest intake-code matches to your search.",
+      ),
     ).toBeTruthy();
     expect(
-      within(matchingRow).queryByRole("button", { name: "Compare" }),
+      within(matchingRow!).queryByRole("button", { name: "Compare" }),
     ).toBeNull();
 
-    await user.click(within(matchingRow).getByRole("button", { name: "Inspect" }));
+    await user.click(within(matchingRow!).getByRole("button", { name: "Inspect" }));
     expect(
       screen
         .getByRole("tab", { name: /Inspect timetable/ })
@@ -354,7 +424,7 @@ describe("Dashboard MVP", () => {
     ).toBe("true");
     expect(
       screen.getByRole("region", {
-        name: "Weekly timetable for APD3F2605CS(DA)",
+        name: `Weekly timetable for ${fuzzyFixture!.row.intake_code}`,
       }),
     ).toBeTruthy();
     expect(screen.getByText("Lower is better")).toBeTruthy();

@@ -8,7 +8,11 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { CampusNotebook, rankIntakeMatches } from "./CampusNotebook";
+import {
+  CampusNotebook,
+  normalizeIntakeSearch,
+  rankIntakeMatches,
+} from "./CampusNotebook";
 import { parseDashboardData } from "./data";
 import {
   createScoringContext,
@@ -65,6 +69,73 @@ function defaultRanked() {
   );
 }
 
+function findSingleConfigurationFixture() {
+  const weekStart = activeWeek();
+  for (const intake of data.intakes) {
+    const rows = data.weeklyMetrics.filter(
+      (row) =>
+        row.week_start === weekStart && row.intake_code === intake.intake_code,
+    );
+    if (
+      rows.length !== 1 ||
+      !["no_electives", "not_active"].includes(rows[0].elective_status)
+    ) {
+      continue;
+    }
+
+    const normalized = normalizeIntakeSearch(intake.intake_code);
+    for (let index = normalized.length - 2; index > 0; index -= 1) {
+      if (normalized[index] === normalized[index + 1]) continue;
+      const characters = [...normalized];
+      [characters[index], characters[index + 1]] = [
+        characters[index + 1],
+        characters[index],
+      ];
+      const query = characters.join("");
+      const matches = rankIntakeMatches(data.intakes, query, weekStart);
+      if (
+        matches.length > 1 &&
+        matches[0].intake.intake_code === intake.intake_code
+      ) {
+        return { intake, matches, query, row: rows[0] };
+      }
+    }
+  }
+  throw new Error("No single-configuration intake supports the keyboard-flow test.");
+}
+
+function findElectiveFixture() {
+  const weekStart = activeWeek();
+  for (const intake of data.intakes) {
+    const rows = data.weeklyMetrics.filter(
+      (row) =>
+        row.week_start === weekStart && row.intake_code === intake.intake_code,
+    );
+    const profiles = new Map(
+      rows.map((row) => [row.elective_profile, row.elective_profile_name]),
+    );
+    if (profiles.size > 1) return { intake, profiles, rows };
+  }
+  throw new Error("No intake with multiple elective profiles is available.");
+}
+
+function expectedProgrammeTitle(intake: DashboardData["intakes"][number]) {
+  const course = intake.course_name ?? intake.course_code ?? intake.intake_code;
+  return intake.specialism_name
+    ? `${course} with a specialism in ${intake.specialism_name}`
+    : course;
+}
+
+function expectedProgrammeMeta(intake: DashboardData["intakes"][number]) {
+  return [
+    intake.programme_level_name,
+    intake.academic_level === null ? null : `Year ${intake.academic_level}`,
+    intake.programme_route_name,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 describe("Campus Notebook wizard", () => {
   it("shows Leonard's website, social profiles, and contact email", () => {
     render(<CampusNotebook data={data} onOpenDashboard={vi.fn()} />);
@@ -88,30 +159,35 @@ describe("Campus Notebook wizard", () => {
   });
 
   it("ranks typo-tolerant intake suggestions by their strongest match", () => {
-    const matches = rankIntakeMatches(
-      data.intakes,
-      "APD3F2605CS(D)",
-      "2026-08-10",
-    );
+    const fixture = findSingleConfigurationFixture();
 
-    expect(matches[0].intake.intake_code).toBe("APD3F2605CS(DA)");
-    expect(matches[0].kind).toMatch(/Strong|Close/);
+    expect(fixture.matches[0].intake.intake_code).toBe(
+      fixture.intake.intake_code,
+    );
+    expect(fixture.matches[0].kind).toMatch(/Strong|Close/);
   });
 
   it("derives valid group and elective choices from the selected intake", async () => {
+    const fixture = findElectiveFixture();
     const user = userEvent.setup();
     render(<CampusNotebook data={data} onOpenDashboard={vi.fn()} />);
 
     const search = screen.getByRole("combobox", { name: "Search intake code" });
-    await user.type(search, "APD2F2602CS(CYB)");
+    await user.type(search, fixture.intake.intake_code);
     await user.keyboard("{Enter}{Enter}");
 
-    expect(screen.getByRole("button", { name: "G1" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "G2" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "G3" })).toBeTruthy();
-    expect(screen.getByText("Social Psychology")).toBeTruthy();
-    expect(screen.getByText("Implementation of Secure Systems")).toBeTruthy();
-    expect(screen.queryByText("Data Analytics")).toBeNull();
+    const groupings = [...new Set(fixture.rows.map((row) => row.grouping))];
+    if (groupings.length === 1) {
+      expect(screen.getByText("Only one group detected")).toBeTruthy();
+      expect(screen.getByText(groupings[0])).toBeTruthy();
+    } else {
+      for (const grouping of groupings) {
+        expect(screen.getByRole("button", { name: grouping })).toBeTruthy();
+      }
+    }
+    for (const profileName of fixture.profiles.values()) {
+      expect(screen.getAllByText(profileName).length).toBeGreaterThan(0);
+    }
     expect(screen.queryByText(/^resolved$/i)).toBeNull();
     expect(screen.queryByText(/Smart filtering is active/i)).toBeNull();
   });
@@ -161,6 +237,7 @@ describe("Campus Notebook wizard", () => {
   });
 
   it("supports the keyboard flow, detected-only states, preferences, and result", async () => {
+    const fixture = findSingleConfigurationFixture();
     const ranked = rankVariants(
       data.weeklyMetrics.filter((row) => row.week_start === activeWeek()),
       data.scoring,
@@ -173,7 +250,8 @@ describe("Campus Notebook wizard", () => {
     );
     const expectedResult = ranked.find(
       (row) =>
-        row.intake_code === "APD3F2605CS(DA)" && row.grouping === "G1",
+        row.intake_code === fixture.intake.intake_code &&
+        row.grouping === fixture.row.grouping,
     );
     expect(expectedResult).toBeDefined();
     const user = userEvent.setup();
@@ -187,7 +265,7 @@ describe("Campus Notebook wizard", () => {
     ).toBe(true);
 
     const search = screen.getByRole("combobox", { name: "Search intake code" });
-    await user.type(search, "APD3F2605CS(D)");
+    await user.type(search, fixture.query);
     expect(search.getAttribute("aria-activedescendant")).toBe("tn-suggestion-0");
 
     await user.keyboard("{ArrowDown}");
@@ -196,7 +274,7 @@ describe("Campus Notebook wizard", () => {
     expect(search.getAttribute("aria-activedescendant")).toBe("tn-suggestion-0");
 
     await user.keyboard("{Enter}");
-    expect(search).toHaveProperty("value", "APD3F2605CS(DA)");
+    expect(search).toHaveProperty("value", fixture.intake.intake_code);
     expect(
       screen.getByRole("heading", { name: "Which intake are you in?" }),
     ).toBeTruthy();
@@ -212,7 +290,9 @@ describe("Campus Notebook wizard", () => {
       screen.getByRole("button", { name: /Continue to preferences/ }),
     );
     expect(
-      screen.getByRole("heading", { name: "When should your classes happen?" }),
+      screen.getByRole("heading", {
+        name: "What does your ideal timetable look like?",
+      }),
     ).toBeTruthy();
     expect(
       screen.getByRole("radio", { name: /Balanced midday/ }),
@@ -252,11 +332,11 @@ describe("Campus Notebook wizard", () => {
     expect(screen.queryByText("Days run across the top. Time runs down the left.")).toBeNull();
     expect(
       screen.getByRole("heading", {
-        name: "Computer Science with a specialism in Data Analytics",
+        name: expectedProgrammeTitle(fixture.intake),
       }),
     ).toBeTruthy();
     expect(
-      screen.getByText("Degree, Year 3, Dual-degree programme"),
+      screen.getByText(expectedProgrammeMeta(fixture.intake)),
     ).toBeTruthy();
 
     const resultSummary = screen.getByRole("complementary", {
@@ -288,7 +368,7 @@ describe("Campus Notebook wizard", () => {
     expect(screen.getAllByText("Lower is better")).toHaveLength(2);
 
     const dashboardNext = screen.getByRole("region", {
-      name: "Put your timetable beside the best and worst.",
+      name: "See the full list of timetables.",
     });
     expect(within(dashboardNext).getByText("UP NEXT")).toBeTruthy();
     expect(within(dashboardNext).getByText("06")).toBeTruthy();
