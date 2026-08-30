@@ -4,8 +4,13 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from scripts.build_dashboard_data import DashboardDataError, build_dashboard_data
+from scripts.build_dashboard_data import (
+    DashboardDataError,
+    _write_json_atomically,
+    build_dashboard_data,
+)
 from scripts.calculate_daily_metrics import calculate_daily_metrics
 from scripts.calculate_weekly_metrics import calculate_weekly_metrics
 from scripts.rank_timetables import rank_weekly_metrics
@@ -82,6 +87,25 @@ def create_repository(repository_root: Path) -> None:
 
 
 class DashboardExportTests(unittest.TestCase):
+    def test_rewrites_existing_json_when_atomic_replace_is_denied(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "latest.json"
+            target.write_text('{"snapshot":"old"}\n', encoding="utf-8")
+
+            with patch(
+                "scripts.build_dashboard_data.os.replace",
+                side_effect=PermissionError("file is open"),
+            ):
+                summary = _write_json_atomically(
+                    {"snapshot": "new"},
+                    target,
+                )
+
+            exported = json.loads(target.read_text(encoding="utf-8"))
+
+        self.assertEqual(exported, {"snapshot": "new"})
+        self.assertEqual(summary["size_bytes"], len(b'{"snapshot":"new"}\n'))
+
     def test_exports_schema_four_with_one_scoring_contract(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

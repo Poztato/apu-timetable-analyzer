@@ -847,7 +847,21 @@ def _write_json_atomically(payload: Mapping[str, Any], target: Path) -> dict[str
         ) as temporary_file:
             temporary_path = Path(temporary_file.name)
             temporary_file.write(encoded)
-        os.replace(temporary_path, target)
+        try:
+            os.replace(temporary_path, target)
+        except PermissionError:
+            if not target.is_file():
+                raise
+            # Windows can deny replacement while a development server has the
+            # existing JSON open, even though that file remains writable.
+            # The temporary file is already complete and validated, so copy it
+            # over the existing target as a compatibility fallback.
+            with temporary_path.open("rb") as source, target.open("wb") as output:
+                while chunk := source.read(1024 * 1024):
+                    output.write(chunk)
+                output.flush()
+                os.fsync(output.fileno())
+            temporary_path.unlink()
     except OSError as exc:
         raise DashboardDataError(
             f"Cannot write dashboard JSON: {target}. {exc}"

@@ -107,16 +107,15 @@ One result represents one intake, timetable week, group, and elective configurat
 
 [`config/scoring.json`](config/scoring.json) is the single scoring contract used by the Python data pipeline and exported to the browser. It defines the preferred bands, component caps, smooth ranges, online-only range, and optional emphasis amounts. The previous separate ranking configuration is no longer used.
 
-After timetable variants have been built, regenerate scoring data with:
+From the repository root, refresh the feed and rebuild every required output with:
 
 ```powershell
-python scripts/calculate_daily_metrics.py
-python scripts/calculate_weekly_metrics.py
-python scripts/rank_timetables.py
-python scripts/build_dashboard_data.py
+python scripts/refresh_timetable.py
 ```
 
-Pass `--snapshot-id <id>` to the first three commands to process one indexed snapshot, or `--all` to process every indexed snapshot. Without either option, each command uses the latest snapshot. The dashboard export validates that the generated stages use the same scoring profile before writing browser data.
+This command fetches the latest timetable, rebuilds all indexed snapshots, exports `web/public/data/latest.json`, runs the Python and frontend tests, and builds the production website. It stops at the first failed step. After a successful run, it prints the snapshot index, retained raw snapshot, and public JSON files that should be reviewed and committed.
+
+Use `python scripts/refresh_timetable.py --skip-fetch` to rebuild and validate a snapshot that has already been collected, or when deliberately working offline.
 
 ## Local development
 
