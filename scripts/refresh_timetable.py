@@ -33,6 +33,18 @@ class Step:
     working_directory: Path
 
 
+@dataclass(frozen=True)
+class TimetableSummary:
+    """High-level statistics for one exported timetable snapshot."""
+
+    minimum_event_date: str
+    maximum_event_date: str
+    variant_count: int
+    active_intake_count: int
+    source_row_count: int
+    week_count: int
+
+
 def build_steps(
     repository_root: Path,
     python_executable: str,
@@ -188,6 +200,113 @@ def run_steps(
         _run_step(step, position, total)
 
 
+def load_timetable_summary(
+    repository_root: Path,
+    *,
+    required: bool = True,
+) -> TimetableSummary | None:
+    """Load summary statistics from the public dashboard export."""
+
+    export_path = repository_root / LATEST_EXPORT_RELATIVE_PATH
+    try:
+        export = json.loads(export_path.read_text(encoding="utf-8"))
+        snapshot = export["snapshot"]
+        if not isinstance(snapshot, dict):
+            raise TypeError("snapshot is not an object")
+
+        minimum_event_date = snapshot["minimum_event_date"]
+        maximum_event_date = snapshot["maximum_event_date"]
+        if not isinstance(minimum_event_date, str) or not minimum_event_date:
+            raise TypeError("minimum_event_date is not a non-empty string")
+        if not isinstance(maximum_event_date, str) or not maximum_event_date:
+            raise TypeError("maximum_event_date is not a non-empty string")
+
+        counts: dict[str, int] = {}
+        for field in (
+            "variant_count",
+            "active_intake_count",
+            "source_row_count",
+            "week_count",
+        ):
+            value = snapshot[field]
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise TypeError(f"{field} is not a non-negative integer")
+            counts[field] = value
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        if not required:
+            return None
+        raise RefreshError(
+            f"Cannot read timetable summary from {export_path}: {exc}"
+        ) from exc
+
+    return TimetableSummary(
+        minimum_event_date=minimum_event_date,
+        maximum_event_date=maximum_event_date,
+        variant_count=counts["variant_count"],
+        active_intake_count=counts["active_intake_count"],
+        source_row_count=counts["source_row_count"],
+        week_count=counts["week_count"],
+    )
+
+
+def format_timetable_summary(
+    previous: TimetableSummary | None,
+    current: TimetableSummary,
+) -> list[str]:
+    """Format current statistics and, when possible, their changes."""
+
+    labels = (
+        "Date range",
+        "Timetable variants",
+        "Active intakes",
+        "Source rows",
+        "Weeks",
+    )
+    label_width = max(len(label) for label in labels) + 1
+
+    if previous is None:
+        return [
+            "Timetable summary:",
+            "  Previous export statistics unavailable; showing current values.",
+            f"  {'Date range:':<{label_width}} "
+            f"{current.minimum_event_date} to {current.maximum_event_date}",
+            f"  {'Timetable variants:':<{label_width}} {current.variant_count:,}",
+            f"  {'Active intakes:':<{label_width}} {current.active_intake_count:,}",
+            f"  {'Source rows:':<{label_width}} {current.source_row_count:,}",
+            f"  {'Weeks:':<{label_width}} {current.week_count:,}",
+        ]
+
+    if previous == current:
+        return [
+            "Timetable summary:",
+            "  No changes in date range or count statistics.",
+            f"  {'Date range:':<{label_width}} "
+            f"{current.minimum_event_date} to {current.maximum_event_date}",
+            f"  {'Timetable variants:':<{label_width}} {current.variant_count:,}",
+            f"  {'Active intakes:':<{label_width}} {current.active_intake_count:,}",
+            f"  {'Source rows:':<{label_width}} {current.source_row_count:,}",
+            f"  {'Weeks:':<{label_width}} {current.week_count:,}",
+        ]
+
+    def count_change(old: int, new: int) -> str:
+        return f"{old:,} -> {new:,} ({new - old:+,})"
+
+    return [
+        "Timetable changes:",
+        f"  {'Date range:':<{label_width}} "
+        f"{previous.minimum_event_date} to {previous.maximum_event_date} -> "
+        f"{current.minimum_event_date} to {current.maximum_event_date}",
+        f"  {'Timetable variants:':<{label_width}} "
+        f"{count_change(previous.variant_count, current.variant_count)}",
+        f"  {'Active intakes:':<{label_width}} "
+        f"{count_change(previous.active_intake_count, current.active_intake_count)}",
+        f"  {'Source rows:':<{label_width}} "
+        f"{count_change(previous.source_row_count, current.source_row_count)}",
+        f"  {'Weeks:':<{label_width}} "
+        f"{count_change(previous.week_count, current.week_count)}",
+    ]
+
+
 def verify_publishable_outputs(repository_root: Path) -> list[Path]:
     """Verify that the retained snapshot and public export refer to the same data."""
 
@@ -269,17 +388,28 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "No downstream processing, tests, or production build were run."
                 )
                 return 0
+            previous_summary = load_timetable_summary(
+                repository_root,
+                required=False,
+            )
             steps = steps[1:]
             run_steps(steps, start_position=2, total_steps=total_steps)
         else:
+            previous_summary = load_timetable_summary(
+                repository_root,
+                required=False,
+            )
             run_steps(steps)
         publishable_paths = verify_publishable_outputs(repository_root)
+        current_summary = load_timetable_summary(repository_root)
     except RefreshError as exc:
         print(f"\nTimetable refresh failed: {exc}", file=sys.stderr)
         return exc.exit_code
 
     print("\nTimetable refresh completed successfully.")
-    print("Review and commit these publishable files:")
+    print()
+    print("\n".join(format_timetable_summary(previous_summary, current_summary)))
+    print("\nReview and commit these publishable files:")
     for path in publishable_paths:
         print(f"  {path.relative_to(repository_root).as_posix()}")
     print("Generated processed data, history exports, and web/dist remain ignored.")

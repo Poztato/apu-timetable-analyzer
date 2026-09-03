@@ -11,12 +11,34 @@ from unittest.mock import patch
 from scripts.refresh_timetable import (
     RefreshError,
     Step,
+    TimetableSummary,
     build_steps,
+    format_timetable_summary,
+    load_timetable_summary,
     main,
     run_fetch_step,
     run_steps,
     verify_publishable_outputs,
 )
+
+
+def make_summary(
+    *,
+    minimum_event_date: str = "2026-08-24",
+    maximum_event_date: str = "2026-09-13",
+    variant_count: int = 1_946,
+    active_intake_count: int = 842,
+    source_row_count: int = 16_136,
+    week_count: int = 3,
+) -> TimetableSummary:
+    return TimetableSummary(
+        minimum_event_date=minimum_event_date,
+        maximum_event_date=maximum_event_date,
+        variant_count=variant_count,
+        active_intake_count=active_intake_count,
+        source_row_count=source_row_count,
+        week_count=week_count,
+    )
 
 
 class BuildStepsTests(unittest.TestCase):
@@ -122,6 +144,103 @@ class MainTests(unittest.TestCase):
         verify_outputs.assert_not_called()
         self.assertIn("Timetable feed is unchanged", output.getvalue())
         self.assertIn("No downstream processing", output.getvalue())
+
+    @patch("scripts.refresh_timetable.load_timetable_summary")
+    @patch("scripts.refresh_timetable.verify_publishable_outputs", return_value=[])
+    @patch("scripts.refresh_timetable.run_steps")
+    @patch("scripts.refresh_timetable.run_fetch_step", return_value=True)
+    @patch("scripts.refresh_timetable.validate_repository")
+    def test_changed_fetch_prints_before_and_after_summary(
+        self,
+        validate_repository,
+        run_fetch,
+        run_pipeline,
+        verify_outputs,
+        load_summary,
+    ) -> None:
+        previous = make_summary()
+        current = make_summary(
+            minimum_event_date="2026-09-01",
+            variant_count=1_439,
+            active_intake_count=779,
+            source_row_count=12_044,
+            week_count=2,
+        )
+        load_summary.side_effect = [previous, current]
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = StringIO()
+            with redirect_stdout(output):
+                exit_code = main(["--repository-root", directory])
+
+        self.assertEqual(exit_code, 0)
+        validate_repository.assert_called_once()
+        run_fetch.assert_called_once()
+        run_pipeline.assert_called_once()
+        verify_outputs.assert_called_once()
+        self.assertEqual(load_summary.call_count, 2)
+        self.assertIn("Timetable changes:", output.getvalue())
+        self.assertIn("1,946 -> 1,439 (-507)", output.getvalue())
+        self.assertIn("842 -> 779 (-63)", output.getvalue())
+
+
+class TimetableSummaryTests(unittest.TestCase):
+    def test_loads_summary_statistics_from_latest_export(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            export_path = root / "web/public/data/latest.json"
+            export_path.parent.mkdir(parents=True)
+            export_path.write_text(
+                json.dumps(
+                    {
+                        "snapshot": {
+                            "minimum_event_date": "2026-09-01",
+                            "maximum_event_date": "2026-09-13",
+                            "variant_count": 1_439,
+                            "active_intake_count": 779,
+                            "source_row_count": 12_044,
+                            "week_count": 2,
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            summary = load_timetable_summary(root)
+
+        self.assertEqual(
+            summary,
+            make_summary(
+                minimum_event_date="2026-09-01",
+                variant_count=1_439,
+                active_intake_count=779,
+                source_row_count=12_044,
+                week_count=2,
+            ),
+        )
+
+    def test_optional_summary_returns_none_for_an_unusable_previous_export(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            summary = load_timetable_summary(Path(directory), required=False)
+
+        self.assertIsNone(summary)
+
+    def test_formats_current_values_when_previous_export_is_unavailable(self) -> None:
+        lines = format_timetable_summary(None, make_summary())
+
+        output = "\n".join(lines)
+        self.assertIn("Previous export statistics unavailable", output)
+        self.assertIn("Timetable variants: 1,946", output)
+        self.assertNotIn("->", output)
+
+    def test_formats_current_values_without_zero_deltas_when_unchanged(self) -> None:
+        summary = make_summary()
+
+        output = "\n".join(format_timetable_summary(summary, summary))
+
+        self.assertIn("No changes in date range or count statistics", output)
+        self.assertIn("Timetable variants: 1,946", output)
+        self.assertNotIn("+0", output)
 
 
 class VerifyPublishableOutputsTests(unittest.TestCase):

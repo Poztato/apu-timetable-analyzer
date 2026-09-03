@@ -113,7 +113,7 @@ From the repository root, refresh the feed and rebuild every required output wit
 python scripts/refresh_timetable.py
 ```
 
-This command fetches the latest timetable. When the feed has changed, it rebuilds only the latest indexed snapshot, exports `web/public/data/latest.json`, runs the Python and frontend tests, and builds the production website. When the feed is unchanged, it exits successfully without running those downstream steps. It stops at the first failed step. After a successful rebuild, it prints the snapshot index, retained raw snapshot, and public JSON files that should be reviewed and committed.
+This command fetches the latest timetable. When the feed has changed, it rebuilds only the latest indexed snapshot, exports `web/public/data/latest.json`, runs the Python and frontend tests, and builds the production website. When the feed is unchanged, it exits successfully without running those downstream steps. It stops at the first failed step. After a successful rebuild, it prints a before-and-after summary of the date range, timetable variants, active intakes, source rows, and weeks. It then prints the snapshot index, retained raw snapshot, and public JSON files that should be reviewed and committed.
 
 Use `python scripts/refresh_timetable.py --skip-fetch` to rebuild and validate a snapshot that has already been collected, or when deliberately working offline.
 
