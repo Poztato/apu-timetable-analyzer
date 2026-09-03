@@ -54,7 +54,7 @@ def build_steps(
         )
 
     pipeline_scripts = (
-        ("Normalize all retained snapshots", "process_snapshots.py"),
+        ("Normalize the latest snapshot", "process_snapshots.py"),
         ("Build timetable variants", "build_timetable_variants.py"),
         ("Calculate daily metrics", "calculate_daily_metrics.py"),
         ("Calculate weekly metrics", "calculate_weekly_metrics.py"),
@@ -64,7 +64,7 @@ def build_steps(
         steps.append(
             Step(
                 label,
-                (python_executable, f"scripts/{script_name}", "--all"),
+                (python_executable, f"scripts/{script_name}"),
                 repository_root,
             )
         )

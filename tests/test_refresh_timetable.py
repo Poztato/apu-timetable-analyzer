@@ -34,7 +34,8 @@ class BuildStepsTests(unittest.TestCase):
             ],
         )
         for step in steps[1:6]:
-            self.assertEqual(step.command[-1], "--all")
+            self.assertEqual(len(step.command), 2)
+            self.assertNotIn("--all", step.command)
         self.assertEqual(steps[7].command[1:4], ("-m", "unittest", "discover"))
         self.assertEqual(steps[-2].command[1:], ("run", "test"))
         self.assertEqual(steps[-1].command[1:], ("run", "build"))

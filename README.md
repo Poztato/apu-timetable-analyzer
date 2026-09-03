@@ -113,7 +113,7 @@ From the repository root, refresh the feed and rebuild every required output wit
 python scripts/refresh_timetable.py
 ```
 
-This command fetches the latest timetable, rebuilds all indexed snapshots, exports `web/public/data/latest.json`, runs the Python and frontend tests, and builds the production website. It stops at the first failed step. After a successful run, it prints the snapshot index, retained raw snapshot, and public JSON files that should be reviewed and committed.
+This command fetches the latest timetable, rebuilds only the latest indexed snapshot, exports `web/public/data/latest.json`, runs the Python and frontend tests, and builds the production website. It stops at the first failed step. After a successful run, it prints the snapshot index, retained raw snapshot, and public JSON files that should be reviewed and committed.
 
 Use `python scripts/refresh_timetable.py --skip-fetch` to rebuild and validate a snapshot that has already been collected, or when deliberately working offline.
 
