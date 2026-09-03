@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,6 +12,8 @@ from scripts.refresh_timetable import (
     RefreshError,
     Step,
     build_steps,
+    main,
+    run_fetch_step,
     run_steps,
     verify_publishable_outputs,
 )
@@ -63,6 +67,61 @@ class RunStepsTests(unittest.TestCase):
 
         self.assertEqual(context.exception.exit_code, 7)
         run.assert_called_once()
+
+    @patch("scripts.refresh_timetable.subprocess.run")
+    def test_fetch_step_returns_changed_flag_from_json_output(self, run) -> None:
+        run.return_value.returncode = 0
+        run.return_value.stdout = json.dumps(
+            {
+                "status": "unchanged",
+                "changed": False,
+                "snapshot_id": "snapshot-one",
+            }
+        )
+        step = Step("Fetch", ("python-test", "fetch.py"), Path("repository"))
+
+        with redirect_stdout(StringIO()):
+            changed = run_fetch_step(step, total_steps=10)
+
+        self.assertFalse(changed)
+        self.assertEqual(run.call_args.kwargs["stdout"], -1)
+        self.assertTrue(run.call_args.kwargs["text"])
+
+    @patch("scripts.refresh_timetable.subprocess.run")
+    def test_fetch_step_rejects_missing_changed_flag(self, run) -> None:
+        run.return_value.returncode = 0
+        run.return_value.stdout = json.dumps({"status": "unchanged"})
+        step = Step("Fetch", ("python-test", "fetch.py"), Path("repository"))
+
+        with redirect_stdout(StringIO()):
+            with self.assertRaisesRegex(RefreshError, "boolean 'changed'"):
+                run_fetch_step(step, total_steps=10)
+
+
+class MainTests(unittest.TestCase):
+    @patch("scripts.refresh_timetable.verify_publishable_outputs")
+    @patch("scripts.refresh_timetable.run_steps")
+    @patch("scripts.refresh_timetable.run_fetch_step", return_value=False)
+    @patch("scripts.refresh_timetable.validate_repository")
+    def test_unchanged_fetch_skips_the_downstream_pipeline(
+        self,
+        validate_repository,
+        run_fetch,
+        run_pipeline,
+        verify_outputs,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = StringIO()
+            with redirect_stdout(output):
+                exit_code = main(["--repository-root", directory])
+
+        self.assertEqual(exit_code, 0)
+        validate_repository.assert_called_once()
+        run_fetch.assert_called_once()
+        run_pipeline.assert_not_called()
+        verify_outputs.assert_not_called()
+        self.assertIn("Timetable feed is unchanged", output.getvalue())
+        self.assertIn("No downstream processing", output.getvalue())
 
 
 class VerifyPublishableOutputsTests(unittest.TestCase):

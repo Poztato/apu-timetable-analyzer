@@ -119,28 +119,73 @@ def validate_repository(repository_root: Path) -> None:
         )
 
 
-def run_steps(steps: Sequence[Step]) -> None:
+def _run_step(
+    step: Step,
+    position: int,
+    total: int,
+    capture_stdout: bool = False,
+) -> str | None:
+    """Run one workflow step and optionally return its standard output."""
+
+    print(f"\n[{position}/{total}] {step.label}", flush=True)
+    print("  " + " ".join(step.command), flush=True)
+    try:
+        result = subprocess.run(
+            step.command,
+            cwd=step.working_directory,
+            check=False,
+            stdout=subprocess.PIPE if capture_stdout else None,
+            text=capture_stdout,
+        )
+    except FileNotFoundError as exc:
+        raise RefreshError(
+            f"Cannot run {step.label}: command not found: {step.command[0]}"
+        ) from exc
+    if result.returncode != 0:
+        raise RefreshError(
+            f"{step.label} failed with exit code {result.returncode}.",
+            result.returncode,
+        )
+
+    if not capture_stdout:
+        return None
+
+    output = result.stdout
+    if not isinstance(output, str):
+        raise RefreshError(f"{step.label} did not return readable output.")
+    if output:
+        print(output, end="" if output.endswith("\n") else "\n", flush=True)
+    return output
+
+
+def run_fetch_step(step: Step, total_steps: int) -> bool:
+    """Run the fetcher and return whether it retained a changed snapshot."""
+
+    output = _run_step(step, position=1, total=total_steps, capture_stdout=True)
+    try:
+        result = json.loads(output or "")
+    except json.JSONDecodeError as exc:
+        raise RefreshError(
+            "The timetable fetcher did not return a valid JSON result."
+        ) from exc
+
+    if not isinstance(result, dict) or type(result.get("changed")) is not bool:
+        raise RefreshError(
+            "The timetable fetcher result has no valid boolean 'changed' field."
+        )
+    return result["changed"]
+
+
+def run_steps(
+    steps: Sequence[Step],
+    start_position: int = 1,
+    total_steps: int | None = None,
+) -> None:
     """Run each workflow step in order and stop on the first failure."""
 
-    total = len(steps)
-    for position, step in enumerate(steps, start=1):
-        print(f"\n[{position}/{total}] {step.label}", flush=True)
-        print("  " + " ".join(step.command), flush=True)
-        try:
-            result = subprocess.run(
-                step.command,
-                cwd=step.working_directory,
-                check=False,
-            )
-        except FileNotFoundError as exc:
-            raise RefreshError(
-                f"Cannot run {step.label}: command not found: {step.command[0]}"
-            ) from exc
-        if result.returncode != 0:
-            raise RefreshError(
-                f"{step.label} failed with exit code {result.returncode}.",
-                result.returncode,
-            )
+    total = len(steps) if total_steps is None else total_steps
+    for position, step in enumerate(steps, start=start_position):
+        _run_step(step, position, total)
 
 
 def verify_publishable_outputs(repository_root: Path) -> list[Path]:
@@ -216,7 +261,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             sys.executable,
             skip_fetch=arguments.skip_fetch,
         )
-        run_steps(steps)
+        total_steps = len(steps)
+        if not arguments.skip_fetch:
+            if not run_fetch_step(steps[0], total_steps):
+                print("\nTimetable feed is unchanged.")
+                print(
+                    "No downstream processing, tests, or production build were run."
+                )
+                return 0
+            steps = steps[1:]
+            run_steps(steps, start_position=2, total_steps=total_steps)
+        else:
+            run_steps(steps)
         publishable_paths = verify_publishable_outputs(repository_root)
     except RefreshError as exc:
         print(f"\nTimetable refresh failed: {exc}", file=sys.stderr)
