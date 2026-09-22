@@ -24,7 +24,8 @@ import type { DashboardData } from "./types";
 let data: DashboardData;
 
 beforeAll(() => {
-  const path = resolve(process.cwd(), "public/data/latest.json");
+  // UI scenarios must not depend on which intakes the live feed contains.
+  const path = resolve(process.cwd(), "src/test-fixtures/dashboard-ui.json");
   data = parseDashboardData(
     JSON.parse(readFileSync(path, "utf-8")) as unknown,
   );
@@ -192,13 +193,27 @@ describe("Campus Notebook wizard", () => {
     expect(screen.queryByText(/Smart filtering is active/i)).toBeNull();
   });
 
-  it("explains the tied worst position for APU2F2602CS(DF)", async () => {
+  it("keeps UI scenarios in one fixed week with valid variant references", () => {
+    expect(data.weeks).toHaveLength(1);
+    const week = data.weeks[0].week_start;
+    expect(data.weeklyMetrics.every((row) => row.week_start === week)).toBe(true);
+    expect(data.intakes.every((intake) =>
+      intake.week_starts.length === 1 && intake.week_starts[0] === week,
+    )).toBe(true);
+    const variants = new Set(data.weeklyMetrics.map((row) => row.variant_index));
+    expect(data.dailyMetrics.every((row) => variants.has(row.variant_index))).toBe(true);
+    expect(data.timetableBlocks.every((row) => variants.has(row.variant_index))).toBe(true);
+  });
+
+  it("explains tied positions for APU2F2602CS(DF)", async () => {
     const ranked = defaultRanked();
     const target = ranked.find(
       (row) => row.intake_code === "APU2F2602CS(DF)",
     );
     expect(target).toBeDefined();
     const position = summarizeRankPosition(target!);
+    expect(position.isTied).toBe(true);
+    expect(position.tiedCount).toBe(2);
     const user = userEvent.setup();
     render(<CampusNotebook data={data} onOpenDashboard={vi.fn()} />);
 

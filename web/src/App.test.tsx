@@ -151,7 +151,11 @@ describe("Dashboard MVP", () => {
   });
 
   it("supports smart filters, fuzzy search, inspection, and comparison", async () => {
-    const data = loadRealDashboardData();
+    // Keep UI scenarios bounded and stable. The ranking parity test above
+    // deliberately continues to validate the current generated export.
+    const data = parseDashboardData(JSON.parse(readFileSync(
+      resolve(process.cwd(), "src/test-fixtures/dashboard-ui.json"), "utf-8",
+    )) as unknown);
     expect(data.filters.courses.every((option) => option.name)).toBe(true);
     expect(data.filters.specialisms.every((option) => option.code)).toBe(true);
     expect(data.filters.specialisms.some((option) => option.name)).toBe(true);
