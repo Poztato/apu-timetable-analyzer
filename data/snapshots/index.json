@@ -103,5 +103,20 @@
     "etag": "\"8712a2b184e3ad4d2ebae9d5cf0a027e\"",
     "last_modified": "Mon, 21 Sep 2026 01:53:57 GMT",
     "s3_version_id": "6JWUBaLVJOy97qMM53JZ5MxnqhXT6U2Z"
+  },
+  {
+    "snapshot_id": "2026-09-30T02-20-31Z_505f1ac6522a",
+    "collected_at": "2026-09-30T02:20:31Z",
+    "source_url": "https://s3-ap-southeast-1.amazonaws.com/open-ws/weektimetable",
+    "sha256": "505f1ac6522a41dcbfc0aec6107a855f2e33b7bc2293222cd351baae52c0930e",
+    "path": "data/snapshots/raw/2026-09-30T02-20-31Z_505f1ac6522a.json.gz",
+    "content_length": 11981036,
+    "row_count": 22052,
+    "distinct_intake_count": 1097,
+    "minimum_event_date": "2026-09-28",
+    "maximum_event_date": "2026-10-09",
+    "etag": "\"901457d6ea06c21c2b79a881223e42cb\"",
+    "last_modified": "Tue, 29 Sep 2026 02:35:22 GMT",
+    "s3_version_id": "52k15x6FHBtyJPFQoyGHbdIovY82TLZK"
   }
 ]
