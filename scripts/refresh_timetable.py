@@ -148,6 +148,7 @@ def _run_step(
             check=False,
             stdout=subprocess.PIPE if capture_stdout else None,
             text=capture_stdout,
+            creationflags=0x08000000 if sys.platform == "win32" else 0,
         )
     except FileNotFoundError as exc:
         raise RefreshError(

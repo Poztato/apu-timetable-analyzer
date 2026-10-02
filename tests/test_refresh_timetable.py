@@ -120,6 +120,26 @@ class RunStepsTests(unittest.TestCase):
                 run_fetch_step(step, total_steps=10)
 
 
+class HiddenStepTests(unittest.TestCase):
+    @patch("scripts.refresh_timetable.subprocess.run")
+    def test_windows_steps_do_not_open_console_windows(self, run):
+        import scripts.refresh_timetable as refresh
+        run.return_value.returncode = 0
+        step = Step("Test", ("python-test", "test.py"), Path("repository"))
+        with patch.object(refresh.sys, "platform", "win32"), redirect_stdout(StringIO()):
+            run_steps([step])
+        self.assertEqual(run.call_args.kwargs.get("creationflags", 0), 0x08000000)
+
+    @patch("scripts.refresh_timetable.subprocess.run")
+    def test_posix_steps_do_not_use_windows_flags(self, run):
+        import scripts.refresh_timetable as refresh
+        run.return_value.returncode = 0
+        step = Step("Test", ("python-test", "test.py"), Path("repository"))
+        with patch.object(refresh.sys, "platform", "linux"), redirect_stdout(StringIO()):
+            run_steps([step])
+        self.assertEqual(run.call_args.kwargs.get("creationflags", 0), 0)
+
+
 class MainTests(unittest.TestCase):
     @patch("scripts.refresh_timetable.verify_publishable_outputs")
     @patch("scripts.refresh_timetable.run_steps")
