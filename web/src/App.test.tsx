@@ -21,7 +21,8 @@ import type { TimetableBlock } from "./types";
 afterEach(cleanup);
 
 function loadRealDashboardData() {
-  const path = resolve(process.cwd(), "public/data/latest.json");
+  // Test-only override lets the unchanged parity gate replay archived exports.
+  const path = resolve(process.cwd(), process.env.APU_TEST_DASHBOARD ?? "public/data/latest.json");
   return parseDashboardData(
     JSON.parse(readFileSync(path, "utf-8")) as unknown,
   );
@@ -119,34 +120,32 @@ describe("Campus-bound gap markers", () => {
 });
 
 describe("Dashboard MVP", () => {
-  it("reproduces every exported default ranking across all weeks", () => {
-    const data = loadRealDashboardData();
-    const context = createScoringContext(data.dailyMetrics, data.timetableBlocks);
-    const preferences = {
-      timePreference: data.scoring.default_time_preference,
-      emphasizeShortDays: false,
-      emphasizeLongDays: false,
-    };
+  const liveData = loadRealDashboardData();
+  const liveContext = createScoringContext(liveData.dailyMetrics, liveData.timetableBlocks);
 
-    for (const week of data.weeks) {
-      const exported = data.weeklyMetrics.filter(
-        (row) => row.week_start === week.week_start,
-      );
-      const recalculated = rankVariants(
-        exported,
-        data.scoring,
-        preferences,
-        context,
-      );
+  // Live feed growth adds cases, not work to one shared timeout budget.
+  it.each(liveData.weeks)("reproduces every exported default ranking for $week_start", (week) => {
+    const exported = liveData.weeklyMetrics.filter(
+      (row) => row.week_start === week.week_start,
+    );
+    const recalculated = rankVariants(
+      exported,
+      liveData.scoring,
+      {
+        timePreference: liveData.scoring.default_time_preference,
+        emphasizeShortDays: false,
+        emphasizeLongDays: false,
+      },
+      liveContext,
+    );
 
-      for (const row of recalculated) {
-        expect(row.recalculatedScore).toBeCloseTo(row.overall_score, 5);
-        expect(row.recalculatedBestRank).toBe(row.best_rank);
-        expect(row.recalculatedWorstRank).toBe(row.worst_rank);
-        expect(row.recalculatedIsBest).toBe(row.is_best);
-        expect(row.recalculatedIsWorst).toBe(row.is_worst);
-        expect(row.recalculatedIsMostAverage).toBe(row.is_most_average);
-      }
+    for (const row of recalculated) {
+      expect(row.recalculatedScore).toBeCloseTo(row.overall_score, 5);
+      expect(row.recalculatedBestRank).toBe(row.best_rank);
+      expect(row.recalculatedWorstRank).toBe(row.worst_rank);
+      expect(row.recalculatedIsBest).toBe(row.is_best);
+      expect(row.recalculatedIsWorst).toBe(row.is_worst);
+      expect(row.recalculatedIsMostAverage).toBe(row.is_most_average);
     }
   });
 
